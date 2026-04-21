@@ -1,28 +1,36 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Plus, Trash2 } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import type { RoutineInputs } from "@/types/vitaflow";
+import type { RoutineInputs, FixedCommitment } from "@/types/vitaflow";
 
 const DAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
 const schema = z.object({
   name: z.string().trim().min(2, "Diz-nos o teu nome").max(40),
-  schedule: z.string().trim().min(3).max(200),
   goal: z.enum(["manter", "perder", "ganhar"]),
   workoutDays: z.array(z.string()).min(1, "Escolhe pelo menos um dia"),
   wakeTime: z.string().min(1),
   sleepTime: z.string().min(1),
   dietary: z.string().max(300).optional(),
+  weeklySchedule: z.array(z.object({ day: z.string(), hours: z.string().max(60) })).length(7),
+  fixedCommitments: z
+    .array(
+      z.object({
+        title: z.string().trim().min(1, "Dá um nome ao compromisso").max(60),
+        days: z.string().trim().min(1).max(60),
+        time: z.string().trim().min(1).max(30),
+      }),
+    )
+    .max(10),
 });
 
 const Generate = () => {
@@ -30,12 +38,16 @@ const Generate = () => {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<RoutineInputs>({
     name: "",
-    schedule: "Escola das 8h às 16h",
     goal: "manter",
     workoutDays: ["Segunda", "Quarta", "Sexta"],
     wakeTime: "07:00",
     sleepTime: "23:00",
     dietary: "",
+    weeklySchedule: DAYS.map((d) => ({
+      day: d,
+      hours: d === "Sábado" || d === "Domingo" ? "Livre" : "08:00-16:00",
+    })),
+    fixedCommitments: [],
   });
 
   const update = <K extends keyof RoutineInputs>(k: K, v: RoutineInputs[K]) =>
@@ -47,6 +59,25 @@ const Generate = () => {
       form.workoutDays.includes(d) ? form.workoutDays.filter((x) => x !== d) : [...form.workoutDays, d],
     );
   };
+
+  const updateDayHours = (day: string, hours: string) => {
+    update(
+      "weeklySchedule",
+      form.weeklySchedule.map((s) => (s.day === day ? { ...s, hours } : s)),
+    );
+  };
+
+  const addCommitment = () =>
+    update("fixedCommitments", [...form.fixedCommitments, { title: "", days: "", time: "" }]);
+
+  const updateCommitment = (i: number, patch: Partial<FixedCommitment>) =>
+    update(
+      "fixedCommitments",
+      form.fixedCommitments.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
+    );
+
+  const removeCommitment = (i: number) =>
+    update("fixedCommitments", form.fixedCommitments.filter((_, idx) => idx !== i));
 
   const onSubmit = async () => {
     const parsed = schema.safeParse(form);
