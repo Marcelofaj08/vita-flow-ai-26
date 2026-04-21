@@ -139,9 +139,32 @@ const Generate = () => {
               <Label htmlFor="name">O teu nome</Label>
               <Input id="name" value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="Ana" className="mt-1.5" />
             </div>
-            <div>
-              <Label htmlFor="schedule">Horário diário</Label>
-              <Input id="schedule" value={form.schedule} onChange={(e) => update("schedule", e.target.value)} placeholder="Escola 8h-16h" className="mt-1.5" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="wake">Acordar</Label>
+                <Input id="wake" type="time" value={form.wakeTime} onChange={(e) => update("wakeTime", e.target.value)} className="mt-1.5" />
+              </div>
+              <div>
+                <Label htmlFor="sleep">Dormir</Label>
+                <Input id="sleep" type="time" value={form.sleepTime} onChange={(e) => update("sleepTime", e.target.value)} className="mt-1.5" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Label>Horário de escola/trabalho por dia</Label>
+            <p className="text-xs text-muted-foreground mt-1">Ex: <span className="font-mono">08:00-16:00</span> ou <span className="font-mono">Livre</span></p>
+            <div className="mt-3 grid sm:grid-cols-2 gap-2">
+              {form.weeklySchedule.map((s) => (
+                <div key={s.day} className="flex items-center gap-2">
+                  <span className="w-20 shrink-0 text-sm font-medium text-muted-foreground">{s.day}</span>
+                  <Input
+                    value={s.hours}
+                    onChange={(e) => updateDayHours(s.day, e.target.value)}
+                    placeholder="08:00-16:00"
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
@@ -191,15 +214,51 @@ const Generate = () => {
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="wake">Hora de acordar</Label>
-              <Input id="wake" type="time" value={form.wakeTime} onChange={(e) => update("wakeTime", e.target.value)} className="mt-1.5" />
+          <div>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <Label>Compromissos fixos</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Aulas extra, consultas, atividades recorrentes que devem entrar na rotina.
+                </p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addCommitment} className="rounded-full">
+                <Plus className="h-4 w-4 mr-1" /> Adicionar
+              </Button>
             </div>
-            <div>
-              <Label htmlFor="sleep">Hora de dormir</Label>
-              <Input id="sleep" type="time" value={form.sleepTime} onChange={(e) => update("sleepTime", e.target.value)} className="mt-1.5" />
-            </div>
+
+            {form.fixedCommitments.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {form.fixedCommitments.map((c, i) => (
+                  <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_120px_auto] gap-2 items-center rounded-xl border border-border/60 bg-background p-2">
+                    <Input
+                      value={c.title}
+                      onChange={(e) => updateCommitment(i, { title: e.target.value })}
+                      placeholder="Ex: Aula de piano"
+                    />
+                    <Input
+                      value={c.days}
+                      onChange={(e) => updateCommitment(i, { days: e.target.value })}
+                      placeholder="Ex: Terça, Quinta"
+                    />
+                    <Input
+                      value={c.time}
+                      onChange={(e) => updateCommitment(i, { time: e.target.value })}
+                      placeholder="18:00-19:00"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeCommitment(i)}
+                      aria-label="Remover compromisso"
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
