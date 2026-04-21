@@ -91,16 +91,31 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    const weekly = Array.isArray(inputs.weeklySchedule) && inputs.weeklySchedule.length
+      ? inputs.weeklySchedule.map((s: any) => `  - ${s.day}: ${s.hours || "Livre"}`).join("\n")
+      : `  (genérico) ${inputs.schedule || "não indicado"}`;
+
+    const commitments = Array.isArray(inputs.fixedCommitments) && inputs.fixedCommitments.length
+      ? inputs.fixedCommitments
+          .map((c: any) => `  - ${c.title} | ${c.days} | ${c.time}`)
+          .join("\n")
+      : "  (nenhum)";
+
     const userPrompt = `Cria uma rotina semanal completa e plano alimentar para:
 Nome: ${inputs.name}
 Idade: ${inputs.age || "jovem"}
-Horário diário (escola/trabalho): ${inputs.schedule}
 Objetivo: ${inputs.goal}
 Dias disponíveis para treino: ${(inputs.workoutDays || []).join(", ")}
 Hora de acordar: ${inputs.wakeTime} | Hora de dormir: ${inputs.sleepTime}
 Preferências/restrições alimentares: ${inputs.dietary || "Nenhuma"}
 
-Cria os 7 dias (Segunda a Domingo) com horários realistas, refeições equilibradas variadas (não repetir a mesma refeição todos os dias) e treinos apenas nos dias disponíveis. Inclui uma lista de compras realista (15-25 itens).`;
+Horário de escola/trabalho POR DIA (respeita rigorosamente):
+${weekly}
+
+Compromissos fixos recorrentes (devem aparecer no schedule do(s) dia(s) indicado(s) com o tipo "rotina" ou apropriado):
+${commitments}
+
+Cria os 7 dias (Segunda a Domingo) com horários realistas que respeitem o horário de escola/trabalho de cada dia e incluam todos os compromissos fixos nos respetivos dias e horas. Refeições equilibradas variadas (não repetir a mesma refeição todos os dias) e treinos apenas nos dias disponíveis. Inclui uma lista de compras realista (15-25 itens).`;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

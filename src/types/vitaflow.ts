@@ -1,9 +1,28 @@
 export type Goal = "manter" | "perder" | "ganhar";
 
+export type DaySchedule = {
+  day: string;
+  /** Ex: "08:00-16:00" ou "Livre" */
+  hours: string;
+};
+
+export type FixedCommitment = {
+  title: string;
+  /** Ex: "Segunda, Quarta" ou "Diário" */
+  days: string;
+  /** Ex: "18:00-19:00" */
+  time: string;
+};
+
 export type RoutineInputs = {
   name: string;
   age?: string;
-  schedule: string;
+  /** Texto livre legado (mantido p/ compatibilidade) */
+  schedule?: string;
+  /** Horário escola/trabalho por dia da semana */
+  weeklySchedule: DaySchedule[];
+  /** Compromissos fixos recorrentes (aulas extra, consultas, etc.) */
+  fixedCommitments: FixedCommitment[];
   goal: Goal;
   workoutDays: string[];
   wakeTime: string;
