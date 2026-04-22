@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import jsPDF from "jspdf";
-import { ArrowLeft, RefreshCw, ShoppingCart, Sparkles, Coffee, Utensils, Apple, Moon, Dumbbell, BookOpen, Briefcase, Smile, Sun, Download, CheckCircle2, Wand2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, ShoppingCart, Sparkles, Coffee, Utensils, Apple, Moon, Dumbbell, BookOpen, Briefcase, Smile, Sun, Download, CheckCircle2, Wand2, CalendarPlus } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,6 +23,31 @@ const typeMeta: Record<ScheduleBlock["type"], { icon: any; cls: string; label: s
 
 const mealIcons = { breakfast: Coffee, lunch: Utensils, snack: Apple, dinner: Moon };
 const mealLabels = { breakfast: "Pequeno-almoço", lunch: "Almoço", snack: "Snack", dinner: "Jantar" };
+const dayIndexes: Record<string, number> = { Segunda: 1, Terça: 2, Quarta: 3, Quinta: 4, Sexta: 5, Sábado: 6, Domingo: 0 };
+
+const escapeIcs = (value: string) =>
+  value.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\n/g, "\\n");
+
+const nextDateForDay = (day: string) => {
+  const now = new Date();
+  const diff = (dayIndexes[day] - now.getDay() + 7) % 7;
+  const date = new Date(now);
+  date.setDate(now.getDate() + diff);
+  return date;
+};
+
+const formatIcsDate = (date: Date) =>
+  `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}T${String(date.getHours()).padStart(2, "0")}${String(date.getMinutes()).padStart(2, "0")}00`;
+
+const buildEventDates = (day: string, time: string) => {
+  const match = time.match(/(\d{1,2}):(\d{2})(?:\s*-\s*(\d{1,2}):(\d{2}))?/);
+  const start = nextDateForDay(day);
+  start.setHours(match ? Number(match[1]) : 9, match ? Number(match[2]) : 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(match?.[3] ? Number(match[3]) : start.getHours() + 1, match?.[4] ? Number(match[4]) : start.getMinutes(), 0, 0);
+  if (end <= start) end.setHours(start.getHours() + 1);
+  return { start, end };
+};
 
 const getTrackableTasks = (plan: RoutinePlan) =>
   plan.days.flatMap((day) => [
