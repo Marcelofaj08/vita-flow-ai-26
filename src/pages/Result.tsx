@@ -272,6 +272,7 @@ const Result = () => {
                   <div className="space-y-3">
                     {(["breakfast", "lunch", "snack", "dinner"] as const).map((k) => {
                       const Icon = mealIcons[k];
+                      const taskKey = `${d.day}:meal:${k}`;
                       return (
                         <div key={k} className="flex gap-3">
                           <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
@@ -281,6 +282,7 @@ const Result = () => {
                             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{mealLabels[k]}</div>
                             <div className="text-sm">{d.meals[k]}</div>
                           </div>
+                          <Checkbox checked={!!completed[taskKey]} onCheckedChange={() => toggleTask(taskKey)} aria-label={`Concluir ${mealLabels[k]}`} />
                         </div>
                       );
                     })}
