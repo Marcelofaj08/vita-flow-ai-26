@@ -84,6 +84,35 @@ const Account = () => {
             </TabsList>
 
             <TabsContent value="info" className="mt-6 space-y-6">
+              <div className="rounded-2xl bg-gradient-card border border-border/60 p-5 shadow-soft">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <h2 className="font-bold flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Rotina ativa no chat</h2>
+                    <p className="text-sm text-muted-foreground mt-1">O assistente usa esta rotina automaticamente nas respostas.</p>
+                  </div>
+                  {activeRoutine && <Badge variant="secondary">{activeRoutine.title}</Badge>}
+                </div>
+                <div className="mt-4 grid gap-2 md:grid-cols-2">
+                  {routines.map((routine) => {
+                    const active = routine.id === activeRoutineId;
+                    return (
+                      <button
+                        key={routine.id}
+                        type="button"
+                        onClick={() => setActiveRoutine(routine.id)}
+                        className={`text-left rounded-xl border p-3 transition-all ${active ? "border-primary bg-accent shadow-soft" : "border-border bg-background hover:border-primary/40"}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold truncate">{routine.title}</span>
+                          {active && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">{new Date(routine.created_at).toLocaleString("pt-PT", { dateStyle: "medium", timeStyle: "short" })}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {infoCards.map((card) => {
                   const Icon = card.icon;
@@ -116,7 +145,7 @@ const Account = () => {
             </TabsContent>
 
             <TabsContent value="chat" className="mt-6 max-w-3xl">
-              <AssistantChat />
+              <AssistantChat activeRoutineId={activeRoutineId} />
             </TabsContent>
 
             <TabsContent value="history" className="mt-6">
