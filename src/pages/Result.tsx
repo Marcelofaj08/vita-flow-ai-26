@@ -140,6 +140,33 @@ const Result = () => {
     toast({ title: "PDF exportado", description: "A tua rotina foi descarregada." });
   };
 
+  const exportCalendar = () => {
+    if (!plan || !inputs) return;
+    const events = plan.days.flatMap((day) =>
+      day.schedule.map((block, index) => {
+        const dates = buildEventDates(day.day, block.time);
+        return [
+          "BEGIN:VEVENT",
+          `UID:vitaflow-${id ?? "local"}-${day.day}-${index}@vitaflow`,
+          `DTSTAMP:${formatIcsDate(new Date())}`,
+          `DTSTART:${formatIcsDate(dates.start)}`,
+          `DTEND:${formatIcsDate(dates.end)}`,
+          `SUMMARY:${escapeIcs(block.activity)}`,
+          `DESCRIPTION:${escapeIcs(`VitaFlow · ${typeMeta[block.type]?.label ?? "Rotina"}`)}`,
+          "END:VEVENT",
+        ].join("\r\n");
+      }),
+    );
+    const content = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//VitaFlow//Routine//PT", "CALSCALE:GREGORIAN", ...events, "END:VCALENDAR"].join("\r\n");
+    const url = URL.createObjectURL(new Blob([content], { type: "text/calendar;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `vitaflow-calendario-${inputs.name || "rotina"}.ics`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Calendário exportado", description: "Importa o ficheiro .ics no Google Calendar ou Apple Calendar." });
+  };
+
   const getDailySuggestion = async () => {
     if (!plan || !inputs) return;
     setAiLoading("suggestion");
