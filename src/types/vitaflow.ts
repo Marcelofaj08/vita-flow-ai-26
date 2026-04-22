@@ -17,6 +17,10 @@ export type FixedCommitment = {
 export type RoutineInputs = {
   name: string;
   age?: string;
+  weightKg?: string;
+  heightCm?: string;
+  bioimpedanceNotes?: string;
+  bioimpedanceFilePath?: string;
   /** Texto livre legado (mantido p/ compatibilidade) */
   schedule?: string;
   /** Horário escola/trabalho por dia da semana */

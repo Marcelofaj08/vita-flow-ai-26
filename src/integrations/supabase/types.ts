@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      assistant_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      health_profiles: {
+        Row: {
+          age: number | null
+          bioimpedance_file_path: string | null
+          bioimpedance_notes: string | null
+          created_at: string
+          height_cm: number | null
+          id: string
+          updated_at: string
+          user_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          age?: number | null
+          bioimpedance_file_path?: string | null
+          bioimpedance_notes?: string | null
+          created_at?: string
+          height_cm?: number | null
+          id?: string
+          updated_at?: string
+          user_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          age?: number | null
+          bioimpedance_file_path?: string | null
+          bioimpedance_notes?: string | null
+          created_at?: string
+          height_cm?: number | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

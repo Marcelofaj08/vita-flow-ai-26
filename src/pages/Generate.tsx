@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Sparkles, Loader2, Plus, Trash2 } from "lucide-react";
+import { Sparkles, Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,10 @@ const DAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domi
 
 const schema = z.object({
   name: z.string().trim().min(2, "Diz-nos o teu nome").max(40),
+  age: z.string().max(3).optional(),
+  weightKg: z.string().max(6).optional(),
+  heightCm: z.string().max(6).optional(),
+  bioimpedanceNotes: z.string().max(1000).optional(),
   goal: z.enum(["manter", "perder", "ganhar"]),
   workoutDays: z.array(z.string()).min(1, "Escolhe pelo menos um dia"),
   wakeTime: z.string().min(1),
@@ -36,8 +40,13 @@ const schema = z.object({
 const Generate = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [bioFile, setBioFile] = useState<File | null>(null);
   const [form, setForm] = useState<RoutineInputs>({
     name: "",
+    age: "",
+    weightKg: "",
+    heightCm: "",
+    bioimpedanceNotes: "",
     goal: "manter",
     workoutDays: ["Segunda", "Quarta", "Sexta"],
     wakeTime: "07:00",
@@ -96,7 +105,26 @@ const Generate = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("generate-routine", { body: form });
+      let bioimpedanceFilePath = form.bioimpedanceFilePath;
+      if (bioFile) {
+        const safeName = bioFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+        bioimpedanceFilePath = `${session.user.id}/${Date.now()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from("bioimpedance").upload(bioimpedanceFilePath, bioFile, { upsert: true });
+        if (uploadError) throw uploadError;
+      }
+
+      const enrichedForm = { ...form, bioimpedanceFilePath };
+      const { error: profileError } = await (supabase as any).from("health_profiles").upsert({
+        user_id: session.user.id,
+        weight_kg: enrichedForm.weightKg ? Number(enrichedForm.weightKg) : null,
+        height_cm: enrichedForm.heightCm ? Number(enrichedForm.heightCm) : null,
+        age: enrichedForm.age ? Number(enrichedForm.age) : null,
+        bioimpedance_notes: enrichedForm.bioimpedanceNotes || null,
+        bioimpedance_file_path: bioimpedanceFilePath || null,
+      }, { onConflict: "user_id" });
+      if (profileError) throw profileError;
+
+      const { data, error } = await supabase.functions.invoke("generate-routine", { body: enrichedForm });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
@@ -105,13 +133,13 @@ const Generate = () => {
         .insert({
           user_id: session.user.id,
           title: `Rotina de ${form.name}`,
-          inputs: form as any,
+          inputs: enrichedForm as any,
           plan: data.plan,
         })
         .select("id")
         .single();
       if (e2) throw e2;
-      sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: data.plan, inputs: form }));
+      sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: data.plan, inputs: enrichedForm }));
       const resultUrl = `/result?id=${row.id}`;
       if (resultWindow) resultWindow.location.href = resultUrl;
       else window.open(resultUrl, "_blank");
@@ -156,6 +184,21 @@ const Generate = () => {
                 <Label htmlFor="sleep">Dormir</Label>
                 <Input id="sleep" type="time" value={form.sleepTime} onChange={(e) => update("sleepTime", e.target.value)} className="mt-1.5" />
               </div>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="age">Idade</Label>
+              <Input id="age" inputMode="numeric" value={form.age ?? ""} onChange={(e) => update("age", e.target.value)} placeholder="18" className="mt-1.5" />
+            </div>
+            <div>
+              <Label htmlFor="weight">Peso (kg)</Label>
+              <Input id="weight" inputMode="decimal" value={form.weightKg ?? ""} onChange={(e) => update("weightKg", e.target.value)} placeholder="68" className="mt-1.5" />
+            </div>
+            <div>
+              <Label htmlFor="height">Altura (cm)</Label>
+              <Input id="height" inputMode="decimal" value={form.heightCm ?? ""} onChange={(e) => update("heightCm", e.target.value)} placeholder="172" className="mt-1.5" />
             </div>
           </div>
 
@@ -278,6 +321,27 @@ const Generate = () => {
               placeholder="Ex: vegetariano, sem lactose, alergia a frutos secos..."
               className="mt-1.5 min-h-[80px]"
             />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="bio-notes">Bioimpedância ou observações corporais</Label>
+              <Textarea
+                id="bio-notes"
+                value={form.bioimpedanceNotes ?? ""}
+                onChange={(e) => update("bioimpedanceNotes", e.target.value)}
+                placeholder="Ex: % gordura, massa muscular, água corporal, metabolismo basal..."
+                className="mt-1.5 min-h-[100px]"
+              />
+            </div>
+            <div>
+              <Label htmlFor="bio-file">Anexar bioimpedância</Label>
+              <label htmlFor="bio-file" className="mt-1.5 flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-background p-4 text-center text-sm text-muted-foreground hover:border-primary/50 transition-colors">
+                <Upload className="h-5 w-5 text-primary mb-2" />
+                {bioFile ? bioFile.name : "PDF ou imagem com a tua avaliação"}
+              </label>
+              <Input id="bio-file" type="file" accept=".pdf,image/*" className="hidden" onChange={(e) => setBioFile(e.target.files?.[0] ?? null)} />
+            </div>
           </div>
 
           <Button onClick={onSubmit} disabled={loading} size="lg" className="w-full h-12 rounded-full bg-gradient-hero text-primary-foreground border-0 shadow-glow text-base">

@@ -11,6 +11,7 @@ import Result from "./pages/Result.tsx";
 import History from "./pages/History.tsx";
 import About from "./pages/About.tsx";
 import Privacy from "./pages/Privacy.tsx";
+import Account from "./pages/Account.tsx";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/generate" element={<Generate />} />
           <Route path="/result" element={<Result />} />
           <Route path="/history" element={<History />} />
+          <Route path="/account" element={<Account />} />
           <Route path="/about" element={<About />} />
           <Route path="/privacy" element={<Privacy />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
