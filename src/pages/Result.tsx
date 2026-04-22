@@ -268,7 +268,7 @@ const Result = () => {
           </div>
         )}
 
-        <Tabs defaultValue="week" className="mt-8">
+        <Tabs defaultValue="today" className="mt-8">
           <TabsList className="rounded-full">
             <TabsTrigger value="today" className="rounded-full">Hoje</TabsTrigger>
             <TabsTrigger value="week" className="rounded-full">Semana</TabsTrigger>
