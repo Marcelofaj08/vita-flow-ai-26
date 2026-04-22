@@ -99,6 +99,8 @@ const Result = () => {
   const progressKey = id ? `vitaflow:progress:${id}` : "vitaflow:progress:last";
   const tasks = plan ? getTrackableTasks(plan) : [];
   const progress = tasks.length ? Math.round((tasks.filter((t) => completed[t.key]).length / tasks.length) * 100) : 0;
+  const todayName = plan?.days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.day;
+  const todayPlan = plan?.days.find((day) => day.day === todayName) ?? plan?.days[0];
 
   const toggleTask = (key: string) => {
     const next = { ...completed, [key]: !completed[key] };
@@ -230,6 +232,9 @@ const Result = () => {
               <Button onClick={exportPdf} size="sm" variant="secondary" className="rounded-full">
                 <Download className="h-3.5 w-3.5 mr-1.5" /> Exportar PDF
               </Button>
+              <Button onClick={exportCalendar} size="sm" variant="secondary" className="rounded-full">
+                <CalendarPlus className="h-3.5 w-3.5 mr-1.5" /> Exportar calendário
+              </Button>
               <Button onClick={getDailySuggestion} size="sm" variant="secondary" className="rounded-full" disabled={aiLoading === "suggestion"}>
                 <Wand2 className="h-3.5 w-3.5 mr-1.5" /> Sugestão do dia
               </Button>
@@ -265,12 +270,45 @@ const Result = () => {
 
         <Tabs defaultValue="week" className="mt-8">
           <TabsList className="rounded-full">
+            <TabsTrigger value="today" className="rounded-full">Hoje</TabsTrigger>
             <TabsTrigger value="week" className="rounded-full">Semana</TabsTrigger>
             <TabsTrigger value="meals" className="rounded-full">Refeições</TabsTrigger>
             <TabsTrigger value="shopping" className="rounded-full">
               <ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Compras
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="today" className="mt-6">
+            {todayPlan && (
+              <div className="rounded-2xl bg-gradient-card border border-border/60 p-5 shadow-soft max-w-3xl">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <h3 className="text-xl font-bold">Plano de hoje · {todayPlan.day}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Só o essencial para seguires o dia sem distrações.</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="rounded-full" onClick={() => reorganizeDay(todayPlan.day)} disabled={aiLoading === todayPlan.day}>
+                    <Wand2 className="h-3.5 w-3.5 mr-1.5" /> {aiLoading === todayPlan.day ? "A reorganizar..." : "Falhei este dia"}
+                  </Button>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {todayPlan.schedule.map((b, j) => {
+                    const meta = typeMeta[b.type] ?? typeMeta.rotina;
+                    const Icon = meta.icon;
+                    const taskKey = `${todayPlan.day}:block:${j}`;
+                    const trackable = b.type === "treino" || b.type === "refeicao";
+                    return (
+                      <div key={j} className="flex items-start gap-3 text-sm rounded-xl border border-border/60 bg-background p-3">
+                        <div className="font-mono text-xs text-muted-foreground w-14 pt-1">{b.time}</div>
+                        <div className={`rounded-md border p-1.5 ${meta.cls}`}><Icon className="h-4 w-4" /></div>
+                        <div className="flex-1 leading-snug pt-0.5">{b.activity}</div>
+                        {trackable && <Checkbox checked={!!completed[taskKey]} onCheckedChange={() => toggleTask(taskKey)} aria-label={`Concluir ${b.activity}`} />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </TabsContent>
 
           {/* Week */}
           <TabsContent value="week" className="mt-6">
