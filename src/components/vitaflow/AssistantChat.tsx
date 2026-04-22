@@ -44,19 +44,16 @@ export const AssistantChat = () => {
       setMessages((prev) => [...prev, userMessage]);
 
       await (supabase as any).from("assistant_messages").insert({ user_id: user.id, role: "user", content: text });
-      const [{ data: healthProfile }, { data: routine }, { data }] = await Promise.all([
+      const [{ data: healthProfile }, { data: routine }] = await Promise.all([
         (supabase as any).from("health_profiles").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("routines").select("title, inputs, plan, created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.functions.invoke("generate-routine", {
-          body: { action: "assistant_chat", message: text, messages: [...messages, userMessage].slice(-12) },
-        }),
       ]);
 
       const { data: replyData, error } = await supabase.functions.invoke("generate-routine", {
         body: { action: "assistant_chat", message: text, healthProfile, routine, messages: [...messages, userMessage].slice(-12) },
       });
       if (error || replyData?.error) throw new Error(replyData?.error || error?.message);
-      const assistantMessage: Message = { role: "assistant", content: replyData.reply || data?.reply || "Estou aqui para ajudar." };
+      const assistantMessage: Message = { role: "assistant", content: replyData.reply || "Estou aqui para ajudar." };
       setMessages((prev) => [...prev, assistantMessage]);
       await (supabase as any).from("assistant_messages").insert({ user_id: user.id, role: "assistant", content: assistantMessage.content });
     } catch (e: any) {

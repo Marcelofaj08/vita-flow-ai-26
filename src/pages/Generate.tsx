@@ -114,7 +114,7 @@ const Generate = () => {
       }
 
       const enrichedForm = { ...form, bioimpedanceFilePath };
-      await (supabase as any).from("health_profiles").upsert({
+      const { error: profileError } = await (supabase as any).from("health_profiles").upsert({
         user_id: session.user.id,
         weight_kg: enrichedForm.weightKg ? Number(enrichedForm.weightKg) : null,
         height_cm: enrichedForm.heightCm ? Number(enrichedForm.heightCm) : null,
@@ -122,6 +122,7 @@ const Generate = () => {
         bioimpedance_notes: enrichedForm.bioimpedanceNotes || null,
         bioimpedance_file_path: bioimpedanceFilePath || null,
       }, { onConflict: "user_id" });
+      if (profileError) throw profileError;
 
       const { data, error } = await supabase.functions.invoke("generate-routine", { body: enrichedForm });
       if (error) throw error;
