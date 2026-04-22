@@ -83,6 +83,31 @@ const tool = {
   },
 };
 
+const dailyTool = {
+  type: "function",
+  function: {
+    name: "daily_suggestion",
+    description: "Devolve uma sugestão inteligente diária curta e prática.",
+    parameters: {
+      type: "object",
+      properties: {
+        suggestion: { type: "string", description: "Sugestão diária em português europeu, 2-4 frases." },
+      },
+      required: ["suggestion"],
+      additionalProperties: false,
+    },
+  },
+};
+
+const reorganizeTool = {
+  type: "function",
+  function: {
+    name: "reorganize_day",
+    description: "Reorganiza apenas um dia falhado, mantendo a semana equilibrada.",
+    parameters: tool.function.parameters.properties.days.items,
+  },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -100,6 +125,56 @@ serve(async (req) => {
           .map((c: any) => `  - ${c.title} | ${c.days} | ${c.time}`)
           .join("\n")
       : "  (nenhum)";
+
+    if (inputs.action === "daily_suggestion") {
+      const userPrompt = `Com base nesta rotina semanal e progresso, gera uma sugestão diária prática e segura para hoje.
+Nome: ${inputs.name || "utilizador"}
+Dia: ${inputs.day || "hoje"}
+Progresso concluído: ${inputs.progress || 0}%
+Rotina: ${JSON.stringify(inputs.plan || {})}
+
+Foca em adaptação de treino, alimentação, hidratação, descanso ou organização. Não faças recomendações extremas.`;
+
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: userPrompt }],
+          tools: [dailyTool],
+          tool_choice: { type: "function", function: { name: "daily_suggestion" } },
+        }),
+      });
+
+      if (!resp.ok) return new Response(JSON.stringify({ error: "Erro do serviço de IA." }), { status: resp.status === 429 ? 429 : resp.status === 402 ? 402 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const data = await resp.json();
+      const call = data.choices?.[0]?.message?.tool_calls?.[0];
+      return new Response(JSON.stringify(JSON.parse(call.function.arguments)), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (inputs.action === "reorganize_day") {
+      const userPrompt = `O utilizador falhou o dia ${inputs.day}. Reorganiza APENAS esse dia da rotina, mantendo tudo seguro e realista.
+Dados pessoais e horários: ${JSON.stringify(inputs.inputs || {})}
+Plano atual: ${JSON.stringify(inputs.plan || {})}
+
+Mantém o mesmo nome do dia, inclui refeições equilibradas, descanso e adapta o treino sem exageros.`;
+
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: userPrompt }],
+          tools: [reorganizeTool],
+          tool_choice: { type: "function", function: { name: "reorganize_day" } },
+        }),
+      });
+
+      if (!resp.ok) return new Response(JSON.stringify({ error: "Erro do serviço de IA." }), { status: resp.status === 429 ? 429 : resp.status === 402 ? 402 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const data = await resp.json();
+      const call = data.choices?.[0]?.message?.tool_calls?.[0];
+      return new Response(JSON.stringify({ dayPlan: JSON.parse(call.function.arguments) }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const userPrompt = `Cria uma rotina semanal completa e plano alimentar para:
 Nome: ${inputs.name}

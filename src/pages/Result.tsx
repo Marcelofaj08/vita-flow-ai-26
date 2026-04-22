@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, RefreshCw, ShoppingCart, Sparkles, Coffee, Utensils, Apple, Moon, Dumbbell, BookOpen, Briefcase, Smile, Sun } from "lucide-react";
+import jsPDF from "jspdf";
+import { ArrowLeft, RefreshCw, ShoppingCart, Sparkles, Coffee, Utensils, Apple, Moon, Dumbbell, BookOpen, Briefcase, Smile, Sun, Download, CheckCircle2, Wand2 } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoutinePlan, RoutineInputs, ScheduleBlock } from "@/types/vitaflow";
@@ -21,12 +24,27 @@ const typeMeta: Record<ScheduleBlock["type"], { icon: any; cls: string; label: s
 const mealIcons = { breakfast: Coffee, lunch: Utensils, snack: Apple, dinner: Moon };
 const mealLabels = { breakfast: "Pequeno-almoço", lunch: "Almoço", snack: "Snack", dinner: "Jantar" };
 
+const getTrackableTasks = (plan: RoutinePlan) =>
+  plan.days.flatMap((day) => [
+    ...day.schedule
+      .map((block, index) => ({ key: `${day.day}:block:${index}`, label: `${day.day} · ${block.activity}` , type: block.type }))
+      .filter((task) => task.type === "treino" || task.type === "refeicao"),
+    ...(["breakfast", "lunch", "snack", "dinner"] as const).map((meal) => ({
+      key: `${day.day}:meal:${meal}`,
+      label: `${day.day} · ${mealLabels[meal]}`,
+      type: "refeicao" as const,
+    })),
+  ]);
+
 const Result = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const id = params.get("id");
   const [plan, setPlan] = useState<RoutinePlan | null>(null);
   const [inputs, setInputs] = useState<RoutineInputs | null>(null);
+  const [completed, setCompleted] = useState<Record<string, boolean>>({});
+  const [suggestion, setSuggestion] = useState("");
+  const [aiLoading, setAiLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -38,6 +56,7 @@ const Result = () => {
         }
         setPlan(data.plan as any);
         setInputs(data.inputs as any);
+        setCompleted(JSON.parse(localStorage.getItem(`vitaflow:progress:${id}`) || "{}"));
       });
     } else {
       const cached = sessionStorage.getItem("vitaflow:lastPlan");
@@ -48,8 +67,86 @@ const Result = () => {
       const { plan, inputs } = JSON.parse(cached);
       setPlan(plan);
       setInputs(inputs);
+      setCompleted(JSON.parse(localStorage.getItem("vitaflow:progress:last") || "{}"));
     }
   }, [id, navigate]);
+
+  const progressKey = id ? `vitaflow:progress:${id}` : "vitaflow:progress:last";
+  const tasks = plan ? getTrackableTasks(plan) : [];
+  const progress = tasks.length ? Math.round((tasks.filter((t) => completed[t.key]).length / tasks.length) * 100) : 0;
+
+  const toggleTask = (key: string) => {
+    const next = { ...completed, [key]: !completed[key] };
+    setCompleted(next);
+    localStorage.setItem(progressKey, JSON.stringify(next));
+  };
+
+  const exportPdf = () => {
+    if (!plan || !inputs) return;
+    const doc = new jsPDF();
+    let y = 18;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text(`VitaFlow - Rotina de ${inputs.name}`, 14, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    y += 8;
+    doc.text(`Progresso semanal: ${progress}%`, 14, y);
+    y += 8;
+    doc.text(doc.splitTextToSize(plan.summary, 180), 14, y);
+    y += 14;
+    plan.days.forEach((day) => {
+      if (y > 260) { doc.addPage(); y = 18; }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text(day.day, 14, y);
+      y += 6;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      day.schedule.slice(0, 8).forEach((block) => {
+        const lines = doc.splitTextToSize(`${block.time} - ${block.activity}`, 180);
+        doc.text(lines, 16, y);
+        y += lines.length * 5;
+      });
+      doc.text(doc.splitTextToSize(`Treino: ${day.workout}`, 180), 16, y);
+      y += 8;
+    });
+    doc.save(`vitaflow-rotina-${inputs.name || "semanal"}.pdf`);
+    toast({ title: "PDF exportado", description: "A tua rotina foi descarregada." });
+  };
+
+  const getDailySuggestion = async () => {
+    if (!plan || !inputs) return;
+    setAiLoading("suggestion");
+    try {
+      const today = plan.days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.day;
+      const { data, error } = await supabase.functions.invoke("generate-routine", { body: { action: "daily_suggestion", plan, progress, day: today, name: inputs.name } });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      setSuggestion(data.suggestion);
+    } catch (e: any) {
+      toast({ title: "Não foi possível gerar a sugestão", description: e.message, variant: "destructive" });
+    } finally {
+      setAiLoading(null);
+    }
+  };
+
+  const reorganizeDay = async (day: string) => {
+    if (!plan || !inputs) return;
+    setAiLoading(day);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-routine", { body: { action: "reorganize_day", day, plan, inputs } });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      const next = { ...plan, days: plan.days.map((d) => (d.day === day ? data.dayPlan : d)) };
+      setPlan(next);
+      if (id) await supabase.from("routines").update({ plan: next as any }).eq("id", id);
+      else sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: next, inputs }));
+      toast({ title: "Dia reorganizado", description: `${day} foi ajustado pela IA.` });
+    } catch (e: any) {
+      toast({ title: "Não foi possível reorganizar", description: e.message, variant: "destructive" });
+    } finally {
+      setAiLoading(null);
+    }
+  };
 
   if (!plan || !inputs) {
     return (
@@ -78,8 +175,33 @@ const Result = () => {
               <Button onClick={() => navigate("/generate")} size="sm" variant="secondary" className="rounded-full">
                 <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Gerar novamente
               </Button>
+              <Button onClick={exportPdf} size="sm" variant="secondary" className="rounded-full">
+                <Download className="h-3.5 w-3.5 mr-1.5" /> Exportar PDF
+              </Button>
+              <Button onClick={getDailySuggestion} size="sm" variant="secondary" className="rounded-full" disabled={aiLoading === "suggestion"}>
+                <Wand2 className="h-3.5 w-3.5 mr-1.5" /> Sugestão do dia
+              </Button>
             </div>
           </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+          <div className="rounded-2xl bg-gradient-card border border-border/60 p-5 shadow-soft">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="font-bold flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Progresso semanal</h2>
+                <p className="text-sm text-muted-foreground">Treinos e refeições concluídos.</p>
+              </div>
+              <span className="text-2xl font-bold text-primary">{progress}%</span>
+            </div>
+            <Progress value={progress} className="mt-4 h-3" />
+          </div>
+          {suggestion && (
+            <div className="rounded-2xl bg-accent border border-border/60 p-5 text-sm text-accent-foreground flex gap-3 items-start shadow-soft">
+              <Sparkles className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div><strong>Sugestão inteligente:</strong> {suggestion}</div>
+            </div>
+          )}
         </div>
 
         {plan.weekly_tip && (
@@ -119,6 +241,8 @@ const Result = () => {
                     {d.schedule.map((b, j) => {
                       const meta = typeMeta[b.type] ?? typeMeta.rotina;
                       const Icon = meta.icon;
+                      const taskKey = `${d.day}:block:${j}`;
+                      const trackable = b.type === "treino" || b.type === "refeicao";
                       return (
                         <div key={j} className="flex items-start gap-3 text-sm">
                           <div className="font-mono text-xs text-muted-foreground w-12 pt-0.5">{b.time}</div>
@@ -126,10 +250,14 @@ const Result = () => {
                             <Icon className="h-3.5 w-3.5" />
                           </div>
                           <div className="flex-1 leading-snug">{b.activity}</div>
+                          {trackable && <Checkbox checked={!!completed[taskKey]} onCheckedChange={() => toggleTask(taskKey)} aria-label={`Concluir ${b.activity}`} />}
                         </div>
                       );
                     })}
                   </div>
+                  <Button variant="outline" size="sm" className="mt-4 rounded-full w-full" onClick={() => reorganizeDay(d.day)} disabled={aiLoading === d.day}>
+                    <Wand2 className="h-3.5 w-3.5 mr-1.5" /> {aiLoading === d.day ? "A reorganizar..." : "Falhei este dia"}
+                  </Button>
                 </div>
               ))}
             </div>
@@ -144,6 +272,7 @@ const Result = () => {
                   <div className="space-y-3">
                     {(["breakfast", "lunch", "snack", "dinner"] as const).map((k) => {
                       const Icon = mealIcons[k];
+                      const taskKey = `${d.day}:meal:${k}`;
                       return (
                         <div key={k} className="flex gap-3">
                           <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
@@ -153,6 +282,7 @@ const Result = () => {
                             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{mealLabels[k]}</div>
                             <div className="text-sm">{d.meals[k]}</div>
                           </div>
+                          <Checkbox checked={!!completed[taskKey]} onCheckedChange={() => toggleTask(taskKey)} aria-label={`Concluir ${mealLabels[k]}`} />
                         </div>
                       );
                     })}
