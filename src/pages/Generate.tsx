@@ -139,6 +139,7 @@ const Generate = () => {
         .select("id")
         .single();
       if (e2) throw e2;
+      await (supabase as any).from("health_profiles").update({ active_routine_id: row.id }).eq("user_id", session.user.id);
       sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: data.plan, inputs: enrichedForm }));
       const resultUrl = `/result?id=${row.id}`;
       if (resultWindow) resultWindow.location.href = resultUrl;

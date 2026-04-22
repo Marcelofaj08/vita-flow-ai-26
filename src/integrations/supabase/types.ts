@@ -40,6 +40,7 @@ export type Database = {
       }
       health_profiles: {
         Row: {
+          active_routine_id: string | null
           age: number | null
           bioimpedance_file_path: string | null
           bioimpedance_notes: string | null
@@ -51,6 +52,7 @@ export type Database = {
           weight_kg: number | null
         }
         Insert: {
+          active_routine_id?: string | null
           age?: number | null
           bioimpedance_file_path?: string | null
           bioimpedance_notes?: string | null
@@ -62,6 +64,7 @@ export type Database = {
           weight_kg?: number | null
         }
         Update: {
+          active_routine_id?: string | null
           age?: number | null
           bioimpedance_file_path?: string | null
           bioimpedance_notes?: string | null

@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 
 type Message = { id?: string; role: "user" | "assistant"; content: string; created_at?: string };
 
-export const AssistantChat = () => {
+export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | null }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,7 +46,9 @@ export const AssistantChat = () => {
       await (supabase as any).from("assistant_messages").insert({ user_id: user.id, role: "user", content: text });
       const [{ data: healthProfile }, { data: routine }] = await Promise.all([
         (supabase as any).from("health_profiles").select("*").eq("user_id", user.id).maybeSingle(),
-        supabase.from("routines").select("title, inputs, plan, created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        activeRoutineId
+          ? supabase.from("routines").select("id, title, inputs, plan, created_at").eq("id", activeRoutineId).maybeSingle()
+          : supabase.from("routines").select("id, title, inputs, plan, created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
 
       const { data: replyData, error } = await supabase.functions.invoke("generate-routine", {
@@ -69,7 +71,7 @@ export const AssistantChat = () => {
         <div className="h-10 w-10 rounded-xl bg-gradient-hero flex items-center justify-center"><Bot className="h-5 w-5 text-primary-foreground" /></div>
         <div>
           <h2 className="font-bold">Assistente VitaFlow</h2>
-          <p className="text-sm text-muted-foreground">Usa o teu perfil e rotina para responder melhor.</p>
+          <p className="text-sm text-muted-foreground">Usa o teu perfil e a rotina ativa para responder melhor.</p>
         </div>
       </div>
       <ScrollArea className="h-[420px] p-4">
