@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Activity, Calendar, FileText, Plus, Ruler, Scale, UserRound } from "lucide-react";
+import { Activity, Calendar, CheckCircle2, FileText, Plus, Ruler, Scale, UserRound } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
 import { AssistantChat } from "@/components/vitaflow/AssistantChat";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ type HealthProfile = {
   age: number | null;
   bioimpedance_notes: string | null;
   bioimpedance_file_path: string | null;
+  active_routine_id: string | null;
 };
 
 type RoutineRow = { id: string; title: string; created_at: string; inputs: any };
@@ -24,6 +25,7 @@ const Account = () => {
   const navigate = useNavigate();
   const [health, setHealth] = useState<HealthProfile | null>(null);
   const [routines, setRoutines] = useState<RoutineRow[]>([]);
+  const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
@@ -31,16 +33,25 @@ const Account = () => {
     if (!user) { navigate("/auth"); return; }
 
     Promise.all([
-      (supabase as any).from("health_profiles").select("weight_kg, height_cm, age, bioimpedance_notes, bioimpedance_file_path").eq("user_id", user.id).maybeSingle(),
+      (supabase as any).from("health_profiles").select("weight_kg, height_cm, age, bioimpedance_notes, bioimpedance_file_path, active_routine_id").eq("user_id", user.id).maybeSingle(),
       supabase.from("routines").select("id, title, created_at, inputs").order("created_at", { ascending: false }).limit(8),
     ]).then(([healthResult, routinesResult]) => {
       setHealth((healthResult.data ?? null) as HealthProfile | null);
-      setRoutines((routinesResult.data ?? []) as RoutineRow[]);
+      const routineRows = (routinesResult.data ?? []) as RoutineRow[];
+      setRoutines(routineRows);
+      setActiveRoutineId(healthResult.data?.active_routine_id ?? routineRows[0]?.id ?? null);
       setBusy(false);
     });
   }, [user, loading, navigate]);
 
-  const latestInputs = routines[0]?.inputs ?? {};
+  const activeRoutine = routines.find((routine) => routine.id === activeRoutineId) ?? routines[0];
+  const latestInputs = activeRoutine?.inputs ?? {};
+
+  const setActiveRoutine = async (routineId: string) => {
+    if (!user) return;
+    setActiveRoutineId(routineId);
+    await (supabase as any).from("health_profiles").update({ active_routine_id: routineId }).eq("user_id", user.id);
+  };
   const infoCards = [
     { label: "Idade", value: health?.age ?? latestInputs.age ?? "—", suffix: health?.age || latestInputs.age ? "anos" : "", icon: UserRound },
     { label: "Peso", value: health?.weight_kg ?? latestInputs.weightKg ?? "—", suffix: health?.weight_kg || latestInputs.weightKg ? "kg" : "", icon: Scale },
