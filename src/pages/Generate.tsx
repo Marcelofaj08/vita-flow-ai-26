@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Sparkles, Loader2, Plus, Trash2 } from "lucide-react";
+import { Sparkles, Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,10 @@ const DAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domi
 
 const schema = z.object({
   name: z.string().trim().min(2, "Diz-nos o teu nome").max(40),
+  age: z.string().max(3).optional(),
+  weightKg: z.string().max(6).optional(),
+  heightCm: z.string().max(6).optional(),
+  bioimpedanceNotes: z.string().max(1000).optional(),
   goal: z.enum(["manter", "perder", "ganhar"]),
   workoutDays: z.array(z.string()).min(1, "Escolhe pelo menos um dia"),
   wakeTime: z.string().min(1),
@@ -36,8 +40,13 @@ const schema = z.object({
 const Generate = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [bioFile, setBioFile] = useState<File | null>(null);
   const [form, setForm] = useState<RoutineInputs>({
     name: "",
+    age: "",
+    weightKg: "",
+    heightCm: "",
+    bioimpedanceNotes: "",
     goal: "manter",
     workoutDays: ["Segunda", "Quarta", "Sexta"],
     wakeTime: "07:00",
@@ -96,7 +105,25 @@ const Generate = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("generate-routine", { body: form });
+      let bioimpedanceFilePath = form.bioimpedanceFilePath;
+      if (bioFile) {
+        const safeName = bioFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+        bioimpedanceFilePath = `${session.user.id}/${Date.now()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from("bioimpedance").upload(bioimpedanceFilePath, bioFile, { upsert: true });
+        if (uploadError) throw uploadError;
+      }
+
+      const enrichedForm = { ...form, bioimpedanceFilePath };
+      await (supabase as any).from("health_profiles").upsert({
+        user_id: session.user.id,
+        weight_kg: enrichedForm.weightKg ? Number(enrichedForm.weightKg) : null,
+        height_cm: enrichedForm.heightCm ? Number(enrichedForm.heightCm) : null,
+        age: enrichedForm.age ? Number(enrichedForm.age) : null,
+        bioimpedance_notes: enrichedForm.bioimpedanceNotes || null,
+        bioimpedance_file_path: bioimpedanceFilePath || null,
+      }, { onConflict: "user_id" });
+
+      const { data, error } = await supabase.functions.invoke("generate-routine", { body: enrichedForm });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
@@ -105,13 +132,13 @@ const Generate = () => {
         .insert({
           user_id: session.user.id,
           title: `Rotina de ${form.name}`,
-          inputs: form as any,
+          inputs: enrichedForm as any,
           plan: data.plan,
         })
         .select("id")
         .single();
       if (e2) throw e2;
-      sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: data.plan, inputs: form }));
+      sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: data.plan, inputs: enrichedForm }));
       const resultUrl = `/result?id=${row.id}`;
       if (resultWindow) resultWindow.location.href = resultUrl;
       else window.open(resultUrl, "_blank");
