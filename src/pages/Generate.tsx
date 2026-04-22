@@ -186,6 +186,21 @@ const Generate = () => {
             </div>
           </div>
 
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="age">Idade</Label>
+              <Input id="age" inputMode="numeric" value={form.age ?? ""} onChange={(e) => update("age", e.target.value)} placeholder="18" className="mt-1.5" />
+            </div>
+            <div>
+              <Label htmlFor="weight">Peso (kg)</Label>
+              <Input id="weight" inputMode="decimal" value={form.weightKg ?? ""} onChange={(e) => update("weightKg", e.target.value)} placeholder="68" className="mt-1.5" />
+            </div>
+            <div>
+              <Label htmlFor="height">Altura (cm)</Label>
+              <Input id="height" inputMode="decimal" value={form.heightCm ?? ""} onChange={(e) => update("heightCm", e.target.value)} placeholder="172" className="mt-1.5" />
+            </div>
+          </div>
+
           <div>
             <Label>Horário de escola/trabalho por dia</Label>
             <p className="text-xs text-muted-foreground mt-1">Ex: <span className="font-mono">08:00-16:00</span> ou <span className="font-mono">Livre</span></p>
@@ -305,6 +320,27 @@ const Generate = () => {
               placeholder="Ex: vegetariano, sem lactose, alergia a frutos secos..."
               className="mt-1.5 min-h-[80px]"
             />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="bio-notes">Bioimpedância ou observações corporais</Label>
+              <Textarea
+                id="bio-notes"
+                value={form.bioimpedanceNotes ?? ""}
+                onChange={(e) => update("bioimpedanceNotes", e.target.value)}
+                placeholder="Ex: % gordura, massa muscular, água corporal, metabolismo basal..."
+                className="mt-1.5 min-h-[100px]"
+              />
+            </div>
+            <div>
+              <Label htmlFor="bio-file">Anexar bioimpedância</Label>
+              <label htmlFor="bio-file" className="mt-1.5 flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-background p-4 text-center text-sm text-muted-foreground hover:border-primary/50 transition-colors">
+                <Upload className="h-5 w-5 text-primary mb-2" />
+                {bioFile ? bioFile.name : "PDF ou imagem com a tua avaliação"}
+              </label>
+              <Input id="bio-file" type="file" accept=".pdf,image/*" className="hidden" onChange={(e) => setBioFile(e.target.files?.[0] ?? null)} />
+            </div>
           </div>
 
           <Button onClick={onSubmit} disabled={loading} size="lg" className="w-full h-12 rounded-full bg-gradient-hero text-primary-foreground border-0 shadow-glow text-base">
