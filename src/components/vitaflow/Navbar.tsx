@@ -26,6 +26,7 @@ export const Navbar = () => {
           <NavLink to="/" end className={linkCls}>Início</NavLink>
           <NavLink to="/generate" className={linkCls}>Criar rotina</NavLink>
           {user && <NavLink to="/history" className={linkCls}>Histórico</NavLink>}
+          {user && <NavLink to="/account" className={linkCls}>Minha conta</NavLink>}
           <NavLink to="/about" className={linkCls}>Sobre</NavLink>
         </nav>
 
