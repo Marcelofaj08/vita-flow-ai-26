@@ -121,6 +121,7 @@ const Generate = () => {
         age: enrichedForm.age ? Number(enrichedForm.age) : null,
         bioimpedance_notes: enrichedForm.bioimpedanceNotes || null,
         bioimpedance_file_path: bioimpedanceFilePath || null,
+        active_routine_id: row.id,
       }, { onConflict: "user_id" });
       if (profileError) throw profileError;
 
