@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import jsPDF from "jspdf";
-import { ArrowLeft, RefreshCw, ShoppingCart, Sparkles, Coffee, Utensils, Apple, Moon, Dumbbell, BookOpen, Briefcase, Smile, Sun, Download, CheckCircle2, Wand2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, ShoppingCart, Sparkles, Coffee, Utensils, Apple, Moon, Dumbbell, BookOpen, Briefcase, Smile, Sun, Download, CheckCircle2, Wand2, CalendarPlus } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,6 +23,31 @@ const typeMeta: Record<ScheduleBlock["type"], { icon: any; cls: string; label: s
 
 const mealIcons = { breakfast: Coffee, lunch: Utensils, snack: Apple, dinner: Moon };
 const mealLabels = { breakfast: "Pequeno-almoço", lunch: "Almoço", snack: "Snack", dinner: "Jantar" };
+const dayIndexes: Record<string, number> = { Segunda: 1, Terça: 2, Quarta: 3, Quinta: 4, Sexta: 5, Sábado: 6, Domingo: 0 };
+
+const escapeIcs = (value: string) =>
+  value.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\n/g, "\\n");
+
+const nextDateForDay = (day: string) => {
+  const now = new Date();
+  const diff = (dayIndexes[day] - now.getDay() + 7) % 7;
+  const date = new Date(now);
+  date.setDate(now.getDate() + diff);
+  return date;
+};
+
+const formatIcsDate = (date: Date) =>
+  `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}T${String(date.getHours()).padStart(2, "0")}${String(date.getMinutes()).padStart(2, "0")}00`;
+
+const buildEventDates = (day: string, time: string) => {
+  const match = time.match(/(\d{1,2}):(\d{2})(?:\s*-\s*(\d{1,2}):(\d{2}))?/);
+  const start = nextDateForDay(day);
+  start.setHours(match ? Number(match[1]) : 9, match ? Number(match[2]) : 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(match?.[3] ? Number(match[3]) : start.getHours() + 1, match?.[4] ? Number(match[4]) : start.getMinutes(), 0, 0);
+  if (end <= start) end.setHours(start.getHours() + 1);
+  return { start, end };
+};
 
 const getTrackableTasks = (plan: RoutinePlan) =>
   plan.days.flatMap((day) => [
@@ -74,6 +99,8 @@ const Result = () => {
   const progressKey = id ? `vitaflow:progress:${id}` : "vitaflow:progress:last";
   const tasks = plan ? getTrackableTasks(plan) : [];
   const progress = tasks.length ? Math.round((tasks.filter((t) => completed[t.key]).length / tasks.length) * 100) : 0;
+  const todayName = plan?.days[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.day;
+  const todayPlan = plan?.days.find((day) => day.day === todayName) ?? plan?.days[0];
 
   const toggleTask = (key: string) => {
     const next = { ...completed, [key]: !completed[key] };
@@ -113,6 +140,33 @@ const Result = () => {
     });
     doc.save(`vitaflow-rotina-${inputs.name || "semanal"}.pdf`);
     toast({ title: "PDF exportado", description: "A tua rotina foi descarregada." });
+  };
+
+  const exportCalendar = () => {
+    if (!plan || !inputs) return;
+    const events = plan.days.flatMap((day) =>
+      day.schedule.map((block, index) => {
+        const dates = buildEventDates(day.day, block.time);
+        return [
+          "BEGIN:VEVENT",
+          `UID:vitaflow-${id ?? "local"}-${day.day}-${index}@vitaflow`,
+          `DTSTAMP:${formatIcsDate(new Date())}`,
+          `DTSTART:${formatIcsDate(dates.start)}`,
+          `DTEND:${formatIcsDate(dates.end)}`,
+          `SUMMARY:${escapeIcs(block.activity)}`,
+          `DESCRIPTION:${escapeIcs(`VitaFlow · ${typeMeta[block.type]?.label ?? "Rotina"}`)}`,
+          "END:VEVENT",
+        ].join("\r\n");
+      }),
+    );
+    const content = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//VitaFlow//Routine//PT", "CALSCALE:GREGORIAN", ...events, "END:VCALENDAR"].join("\r\n");
+    const url = URL.createObjectURL(new Blob([content], { type: "text/calendar;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `vitaflow-calendario-${inputs.name || "rotina"}.ics`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Calendário exportado", description: "Importa o ficheiro .ics no Google Calendar ou Apple Calendar." });
   };
 
   const getDailySuggestion = async () => {
@@ -178,6 +232,9 @@ const Result = () => {
               <Button onClick={exportPdf} size="sm" variant="secondary" className="rounded-full">
                 <Download className="h-3.5 w-3.5 mr-1.5" /> Exportar PDF
               </Button>
+              <Button onClick={exportCalendar} size="sm" variant="secondary" className="rounded-full">
+                <CalendarPlus className="h-3.5 w-3.5 mr-1.5" /> Exportar calendário
+              </Button>
               <Button onClick={getDailySuggestion} size="sm" variant="secondary" className="rounded-full" disabled={aiLoading === "suggestion"}>
                 <Wand2 className="h-3.5 w-3.5 mr-1.5" /> Sugestão do dia
               </Button>
@@ -211,14 +268,47 @@ const Result = () => {
           </div>
         )}
 
-        <Tabs defaultValue="week" className="mt-8">
+        <Tabs defaultValue="today" className="mt-8">
           <TabsList className="rounded-full">
+            <TabsTrigger value="today" className="rounded-full">Hoje</TabsTrigger>
             <TabsTrigger value="week" className="rounded-full">Semana</TabsTrigger>
             <TabsTrigger value="meals" className="rounded-full">Refeições</TabsTrigger>
             <TabsTrigger value="shopping" className="rounded-full">
               <ShoppingCart className="h-3.5 w-3.5 mr-1.5" /> Compras
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="today" className="mt-6">
+            {todayPlan && (
+              <div className="rounded-2xl bg-gradient-card border border-border/60 p-5 shadow-soft max-w-3xl">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <h3 className="text-xl font-bold">Plano de hoje · {todayPlan.day}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Só o essencial para seguires o dia sem distrações.</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="rounded-full" onClick={() => reorganizeDay(todayPlan.day)} disabled={aiLoading === todayPlan.day}>
+                    <Wand2 className="h-3.5 w-3.5 mr-1.5" /> {aiLoading === todayPlan.day ? "A reorganizar..." : "Falhei este dia"}
+                  </Button>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {todayPlan.schedule.map((b, j) => {
+                    const meta = typeMeta[b.type] ?? typeMeta.rotina;
+                    const Icon = meta.icon;
+                    const taskKey = `${todayPlan.day}:block:${j}`;
+                    const trackable = b.type === "treino" || b.type === "refeicao";
+                    return (
+                      <div key={j} className="flex items-start gap-3 text-sm rounded-xl border border-border/60 bg-background p-3">
+                        <div className="font-mono text-xs text-muted-foreground w-14 pt-1">{b.time}</div>
+                        <div className={`rounded-md border p-1.5 ${meta.cls}`}><Icon className="h-4 w-4" /></div>
+                        <div className="flex-1 leading-snug pt-0.5">{b.activity}</div>
+                        {trackable && <Checkbox checked={!!completed[taskKey]} onCheckedChange={() => toggleTask(taskKey)} aria-label={`Concluir ${b.activity}`} />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </TabsContent>
 
           {/* Week */}
           <TabsContent value="week" className="mt-6">
