@@ -85,31 +85,39 @@ const Generate = () => {
       toast({ title: "Verifica os campos", description: parsed.error.issues[0].message, variant: "destructive" });
       return;
     }
+    const resultWindow = window.open("", "_blank");
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        resultWindow?.close();
+        toast({ title: "Inicia sessão", description: "Cria conta ou entra para guardar a tua rotina no histórico." });
+        navigate("/auth");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-routine", { body: form });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // save if logged in
-      const { data: { session } } = await supabase.auth.getSession();
-      let routineId: string | null = null;
-      if (session) {
-        const { data: row, error: e2 } = await supabase
-          .from("routines")
-          .insert({
-            user_id: session.user.id,
-            title: `Rotina de ${form.name}`,
-            inputs: form as any,
-            plan: data.plan,
-          })
-          .select("id")
-          .single();
-        if (!e2) routineId = row.id;
-      }
+      const { data: row, error: e2 } = await supabase
+        .from("routines")
+        .insert({
+          user_id: session.user.id,
+          title: `Rotina de ${form.name}`,
+          inputs: form as any,
+          plan: data.plan,
+        })
+        .select("id")
+        .single();
+      if (e2) throw e2;
       sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: data.plan, inputs: form }));
-      navigate(routineId ? `/result?id=${routineId}` : "/result");
+      const resultUrl = `/result?id=${row.id}`;
+      if (resultWindow) resultWindow.location.href = resultUrl;
+      else window.open(resultUrl, "_blank");
+      navigate("/history");
     } catch (e: any) {
+      resultWindow?.close();
       toast({
         title: "Não conseguimos gerar a rotina",
         description: e.message ?? "Tenta novamente em instantes.",
