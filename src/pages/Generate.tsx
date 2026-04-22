@@ -121,7 +121,6 @@ const Generate = () => {
         age: enrichedForm.age ? Number(enrichedForm.age) : null,
         bioimpedance_notes: enrichedForm.bioimpedanceNotes || null,
         bioimpedance_file_path: bioimpedanceFilePath || null,
-        active_routine_id: row.id,
       }, { onConflict: "user_id" });
       if (profileError) throw profileError;
 
@@ -140,6 +139,7 @@ const Generate = () => {
         .select("id")
         .single();
       if (e2) throw e2;
+      await (supabase as any).from("health_profiles").update({ active_routine_id: row.id }).eq("user_id", session.user.id);
       sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: data.plan, inputs: enrichedForm }));
       const resultUrl = `/result?id=${row.id}`;
       if (resultWindow) resultWindow.location.href = resultUrl;
