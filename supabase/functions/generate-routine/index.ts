@@ -108,6 +108,22 @@ const reorganizeTool = {
   },
 };
 
+const assistantTool = {
+  type: "function",
+  function: {
+    name: "assistant_reply",
+    description: "Responde como assistente de bem-estar com sugestões seguras e personalizadas.",
+    parameters: {
+      type: "object",
+      properties: {
+        reply: { type: "string", description: "Resposta em português europeu, prática e personalizada." },
+      },
+      required: ["reply"],
+      additionalProperties: false,
+    },
+  },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -176,6 +192,32 @@ Mantém o mesmo nome do dia, inclui refeições equilibradas, descanso e adapta 
       return new Response(JSON.stringify({ dayPlan: JSON.parse(call.function.arguments) }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (inputs.action === "assistant_chat") {
+      const userPrompt = `Responde à pergunta do utilizador com base no perfil e rotina disponíveis.
+Dados pessoais/saúde: ${JSON.stringify(inputs.healthProfile || {})}
+Dados da última rotina: ${JSON.stringify(inputs.routine || {})}
+Histórico recente do chat: ${JSON.stringify(inputs.messages || [])}
+Pergunta: ${inputs.message || ""}
+
+Sê claro, seguro, motivador e evita diagnósticos médicos. Se faltar informação, pede dados específicos.`;
+
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: userPrompt }],
+          tools: [assistantTool],
+          tool_choice: { type: "function", function: { name: "assistant_reply" } },
+        }),
+      });
+
+      if (!resp.ok) return new Response(JSON.stringify({ error: "Erro do serviço de IA." }), { status: resp.status === 429 ? 429 : resp.status === 402 ? 402 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const data = await resp.json();
+      const call = data.choices?.[0]?.message?.tool_calls?.[0];
+      return new Response(JSON.stringify(JSON.parse(call.function.arguments)), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const userPrompt = `Cria uma rotina semanal completa e plano alimentar para:
 Nome: ${inputs.name}
 Idade: ${inputs.age || "jovem"}
@@ -183,6 +225,9 @@ Objetivo: ${inputs.goal}
 Dias disponíveis para treino: ${(inputs.workoutDays || []).join(", ")}
 Hora de acordar: ${inputs.wakeTime} | Hora de dormir: ${inputs.sleepTime}
 Preferências/restrições alimentares: ${inputs.dietary || "Nenhuma"}
+Peso: ${inputs.weightKg || "não indicado"} kg | Altura: ${inputs.heightCm || "não indicada"} cm
+Bioimpedância/observações: ${inputs.bioimpedanceNotes || "não indicado"}
+Ficheiro de bioimpedância anexado: ${inputs.bioimpedanceFilePath ? "sim" : "não"}
 
 Horário de escola/trabalho POR DIA (respeita rigorosamente):
 ${weekly}
