@@ -12,12 +12,12 @@ export const Navbar = () => {
 
   useEffect(() => {
     if (!user) { setActiveRoutineId(null); return; }
-    (supabase as any)
+    supabase
       .from("health_profiles")
       .select("active_routine_id")
       .eq("user_id", user.id)
       .maybeSingle()
-      .then(({ data }: any) => setActiveRoutineId(data?.active_routine_id ?? null));
+      .then(({ data }) => setActiveRoutineId(data?.active_routine_id ?? null));
   }, [user]);
 
   const routineHref = activeRoutineId ? `/result?id=${activeRoutineId}&tab=week` : "/history";
