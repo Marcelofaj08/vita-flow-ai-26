@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -137,30 +138,73 @@ const assistantTool = {
   },
 };
 
+const MAX_JSON_CHARS = 6_000;
+const allowedActions = new Set(["generate_plan", "daily_suggestion", "reorganize_day", "assistant_chat"]);
+
+const text = (value: unknown, max = 300) =>
+  typeof value === "string" ? value.replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, max) : "";
+
+const num = (value: unknown, fallback = 0, min = 0, max = 100) => {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+};
+
+const safeJson = (value: unknown, max = MAX_JSON_CHARS) => text(JSON.stringify(value ?? {}), max);
+
+const authUser = async (req: Request) => {
+  const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+  if (!url || !key) throw new Error("Auth configuration missing");
+
+  const supabase = createClient(url, key, { global: { headers: { Authorization: `Bearer ${token}` } } });
+  const { data, error } = await supabase.auth.getUser(token);
+  return error ? null : data.user;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const user = await authUser(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Não autorizado." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const inputs = await req.json();
+    const action = text(inputs.action || "generate_plan", 40);
+    if (!allowedActions.has(action)) {
+      return new Response(JSON.stringify({ error: "Ação inválida." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const weekly = Array.isArray(inputs.weeklySchedule) && inputs.weeklySchedule.length
-      ? inputs.weeklySchedule.map((s: any) => `  - ${s.day}: ${s.hours || "Livre"}`).join("\n")
-      : `  (genérico) ${inputs.schedule || "não indicado"}`;
+      ? inputs.weeklySchedule.slice(0, 7).map((s: any) => `  - ${text(s.day, 20)}: ${text(s.hours, 120) || "Livre"}`).join("\n")
+      : `  (genérico) ${text(inputs.schedule, 500) || "não indicado"}`;
 
     const commitments = Array.isArray(inputs.fixedCommitments) && inputs.fixedCommitments.length
       ? inputs.fixedCommitments
-          .map((c: any) => `  - ${c.title} | ${c.days} | ${c.time}`)
+          .slice(0, 20)
+          .map((c: any) => `  - ${text(c.title, 80)} | ${text(c.days, 80)} | ${text(c.time, 40)}`)
           .join("\n")
       : "  (nenhum)";
 
-    if (inputs.action === "daily_suggestion") {
+    if (action === "daily_suggestion") {
       const userPrompt = `Com base nesta rotina semanal e progresso, gera uma sugestão diária prática e segura para hoje.
-Nome: ${inputs.name || "utilizador"}
-Dia: ${inputs.day || "hoje"}
-Progresso concluído: ${inputs.progress || 0}%
-Rotina: ${JSON.stringify(inputs.plan || {})}
+Nome: ${text(inputs.name, 40) || "utilizador"}
+Dia: ${text(inputs.day, 20) || "hoje"}
+Progresso concluído: ${num(inputs.progress, 0, 0, 100)}%
+Rotina: ${safeJson(inputs.plan)}
 
 Foca em adaptação de treino, alimentação, hidratação, descanso ou organização. Não faças recomendações extremas.`;
 
@@ -181,10 +225,10 @@ Foca em adaptação de treino, alimentação, hidratação, descanso ou organiza
       return new Response(JSON.stringify(JSON.parse(call.function.arguments)), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (inputs.action === "reorganize_day") {
-      const userPrompt = `O utilizador falhou o dia ${inputs.day}. Reorganiza APENAS esse dia da rotina, mantendo tudo seguro e realista.
-Dados pessoais e horários: ${JSON.stringify(inputs.inputs || {})}
-Plano atual: ${JSON.stringify(inputs.plan || {})}
+    if (action === "reorganize_day") {
+      const userPrompt = `O utilizador falhou o dia ${text(inputs.day, 20)}. Reorganiza APENAS esse dia da rotina, mantendo tudo seguro e realista.
+Dados pessoais e horários: ${safeJson(inputs.inputs)}
+Plano atual: ${safeJson(inputs.plan)}
 
 Mantém o mesmo nome do dia, inclui refeições equilibradas, descanso e adapta o treino sem exageros.`;
 
@@ -205,12 +249,12 @@ Mantém o mesmo nome do dia, inclui refeições equilibradas, descanso e adapta 
       return new Response(JSON.stringify({ dayPlan: JSON.parse(call.function.arguments) }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (inputs.action === "assistant_chat") {
+    if (action === "assistant_chat") {
       const userPrompt = `Responde à pergunta do utilizador com base no perfil e rotina disponíveis.
-Dados pessoais/saúde: ${JSON.stringify(inputs.healthProfile || {})}
-Dados da última rotina: ${JSON.stringify(inputs.routine || {})}
-Histórico recente do chat: ${JSON.stringify(inputs.messages || [])}
-Pergunta: ${inputs.message || ""}
+Dados pessoais/saúde: ${safeJson(inputs.healthProfile, 2_000)}
+Dados da última rotina: ${safeJson(inputs.routine)}
+Histórico recente do chat: ${safeJson(Array.isArray(inputs.messages) ? inputs.messages.slice(-10) : [], 3_000)}
+Pergunta: ${text(inputs.message, 600)}
 
 Sê claro, seguro, motivador e evita diagnósticos médicos. Se faltar informação, pede dados específicos.`;
 
@@ -232,14 +276,14 @@ Sê claro, seguro, motivador e evita diagnósticos médicos. Se faltar informaç
     }
 
     const userPrompt = `Cria uma rotina semanal completa e plano alimentar para:
-Nome: ${inputs.name}
-Idade: ${inputs.age || "jovem"}
-Objetivo: ${inputs.goal}
-Dias disponíveis para treino: ${(inputs.workoutDays || []).join(", ")}
-Hora de acordar: ${inputs.wakeTime} | Hora de dormir: ${inputs.sleepTime}
-Preferências/restrições alimentares: ${inputs.dietary || "Nenhuma"}
-Peso: ${inputs.weightKg || "não indicado"} kg | Altura: ${inputs.heightCm || "não indicada"} cm
-Bioimpedância/observações: ${inputs.bioimpedanceNotes || "não indicado"}
+Nome: ${text(inputs.name, 40) || "utilizador"}
+Idade: ${num(inputs.age, 18, 13, 100)}
+Objetivo: ${text(inputs.goal, 300)}
+Dias disponíveis para treino: ${Array.isArray(inputs.workoutDays) ? inputs.workoutDays.slice(0, 7).map((d: unknown) => text(d, 20)).join(", ") : "não indicado"}
+Hora de acordar: ${text(inputs.wakeTime, 10)} | Hora de dormir: ${text(inputs.sleepTime, 10)}
+Preferências/restrições alimentares: ${text(inputs.dietary, 500) || "Nenhuma"}
+Peso: ${num(inputs.weightKg, 0, 0, 400) || "não indicado"} kg | Altura: ${num(inputs.heightCm, 0, 0, 250) || "não indicada"} cm
+Bioimpedância/observações: ${text(inputs.bioimpedanceNotes, 1000) || "não indicado"}
 Ficheiro de bioimpedância anexado: ${inputs.bioimpedanceFilePath ? "sim" : "não"}
 
 Horário de escola/trabalho POR DIA (respeita rigorosamente):
