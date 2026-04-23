@@ -276,14 +276,14 @@ Sê claro, seguro, motivador e evita diagnósticos médicos. Se faltar informaç
     }
 
     const userPrompt = `Cria uma rotina semanal completa e plano alimentar para:
-Nome: ${inputs.name}
-Idade: ${inputs.age || "jovem"}
-Objetivo: ${inputs.goal}
-Dias disponíveis para treino: ${(inputs.workoutDays || []).join(", ")}
-Hora de acordar: ${inputs.wakeTime} | Hora de dormir: ${inputs.sleepTime}
-Preferências/restrições alimentares: ${inputs.dietary || "Nenhuma"}
-Peso: ${inputs.weightKg || "não indicado"} kg | Altura: ${inputs.heightCm || "não indicada"} cm
-Bioimpedância/observações: ${inputs.bioimpedanceNotes || "não indicado"}
+Nome: ${text(inputs.name, 40) || "utilizador"}
+Idade: ${num(inputs.age, 18, 13, 100)}
+Objetivo: ${text(inputs.goal, 300)}
+Dias disponíveis para treino: ${Array.isArray(inputs.workoutDays) ? inputs.workoutDays.slice(0, 7).map((d: unknown) => text(d, 20)).join(", ") : "não indicado"}
+Hora de acordar: ${text(inputs.wakeTime, 10)} | Hora de dormir: ${text(inputs.sleepTime, 10)}
+Preferências/restrições alimentares: ${text(inputs.dietary, 500) || "Nenhuma"}
+Peso: ${num(inputs.weightKg, 0, 0, 400) || "não indicado"} kg | Altura: ${num(inputs.heightCm, 0, 0, 250) || "não indicada"} cm
+Bioimpedância/observações: ${text(inputs.bioimpedanceNotes, 1000) || "não indicado"}
 Ficheiro de bioimpedância anexado: ${inputs.bioimpedanceFilePath ? "sim" : "não"}
 
 Horário de escola/trabalho POR DIA (respeita rigorosamente):
