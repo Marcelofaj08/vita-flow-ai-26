@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import type { RoutineInputs } from "@/types/vitaflow";
 
 type HealthProfile = {
   weight_kg: number | null;
@@ -21,7 +22,7 @@ type HealthProfile = {
   active_routine_id: string | null;
 };
 
-type RoutineRow = { id: string; title: string; created_at: string; inputs: Record<string, unknown> };
+type RoutineRow = { id: string; title: string; created_at: string; inputs: Partial<RoutineInputs> };
 
 const Account = () => {
   const { user, loading } = useAuth();
