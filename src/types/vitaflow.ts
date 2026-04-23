@@ -44,6 +44,7 @@ export type DayPlan = {
   day: string;
   schedule: ScheduleBlock[];
   meals: { breakfast: string; lunch: string; snack: string; dinner: string };
+  meal_calories?: { breakfast?: number; lunch?: number; snack?: number; dinner?: number; total?: number };
   workout: string;
 };
 
