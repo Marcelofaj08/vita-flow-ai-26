@@ -19,11 +19,18 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [tab, setTab] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) navigate("/generate", { replace: true });
+    });
+
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate("/generate", { replace: true });
     });
+
+    return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
   const handle = async (mode: "signin" | "signup") => {
@@ -35,24 +42,34 @@ const Auth = () => {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
           options: { emailRedirectTo: `${window.location.origin}/generate` },
         });
         if (error) throw error;
-        toast({ title: "Conta criada!", description: "Já podes começar a tua rotina." });
-        navigate("/generate");
+
+        if (data.session) {
+          toast({ title: "Conta criada!", description: "Já podes começar a tua rotina." });
+          navigate("/generate", { replace: true });
+        } else {
+          toast({ title: "Confirma o teu email", description: "Enviámos um link de confirmação. Depois volta aqui para entrar." });
+          setTab("signin");
+        }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: parsed.data.email,
           password: parsed.data.password,
         });
         if (error) throw error;
-        navigate("/generate");
+        if (!data.session) throw new Error("Não foi possível iniciar sessão. Confirma o teu email e tenta novamente.");
+        navigate("/generate", { replace: true });
       }
     } catch (e: any) {
-      toast({ title: "Erro", description: e.message ?? "Tenta novamente", variant: "destructive" });
+      const message = e.message === "Invalid login credentials"
+        ? "Email ou palavra-passe incorretos. Se acabaste de criar conta, confirma primeiro o email."
+        : e.message ?? "Tenta novamente";
+      toast({ title: "Erro ao entrar", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -74,7 +91,7 @@ const Auth = () => {
             Entra ou cria conta para guardares as tuas rotinas.
           </p>
 
-          <Tabs defaultValue="signin" className="mt-6">
+          <Tabs value={tab} onValueChange={(value) => setTab(value as "signin" | "signup")} className="mt-6">
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
