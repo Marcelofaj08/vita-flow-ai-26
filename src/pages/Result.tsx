@@ -25,6 +25,9 @@ const mealIcons = { breakfast: Coffee, lunch: Utensils, snack: Apple, dinner: Mo
 const mealLabels = { breakfast: "Pequeno-almoço", lunch: "Almoço", snack: "Snack", dinner: "Jantar" };
 const dayIndexes: Record<string, number> = { Segunda: 1, Terça: 2, Quarta: 3, Quinta: 4, Sexta: 5, Sábado: 6, Domingo: 0 };
 
+const getMealCalories = (day: RoutinePlan["days"][number], meal: keyof typeof mealLabels) =>
+  day.meal_calories?.[meal] ? `${Math.round(day.meal_calories[meal] ?? 0)} kcal` : "kcal a definir";
+
 const escapeIcs = (value: string) =>
   value.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\n/g, "\\n");
 
@@ -268,7 +271,7 @@ const Result = () => {
           </div>
         )}
 
-        <Tabs defaultValue="today" className="mt-8">
+        <Tabs defaultValue={params.get("tab") ?? "today"} className="mt-8">
           <TabsList className="rounded-full">
             <TabsTrigger value="today" className="rounded-full">Hoje</TabsTrigger>
             <TabsTrigger value="week" className="rounded-full">Semana</TabsTrigger>
@@ -284,7 +287,7 @@ const Result = () => {
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
                     <h3 className="text-xl font-bold">Plano de hoje · {todayPlan.day}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">Só o essencial para seguires o dia sem distrações.</p>
+                    <p className="text-sm text-muted-foreground mt-1">Só o essencial para seguires o dia sem distrações{todayPlan.meal_calories?.total ? ` · ${Math.round(todayPlan.meal_calories.total)} kcal estimadas` : ""}.</p>
                   </div>
                   <Button variant="outline" size="sm" className="rounded-full" onClick={() => reorganizeDay(todayPlan.day)} disabled={aiLoading === todayPlan.day}>
                     <Wand2 className="h-3.5 w-3.5 mr-1.5" /> {aiLoading === todayPlan.day ? "A reorganizar..." : "Falhei este dia"}
@@ -371,6 +374,7 @@ const Result = () => {
                           <div className="flex-1">
                             <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{mealLabels[k]}</div>
                             <div className="text-sm">{d.meals[k]}</div>
+                            <div className="mt-1 text-xs font-semibold text-primary">{getMealCalories(d, k)}</div>
                           </div>
                           <Checkbox checked={!!completed[taskKey]} onCheckedChange={() => toggleTask(taskKey)} aria-label={`Concluir ${mealLabels[k]}`} />
                         </div>
