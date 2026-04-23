@@ -1,7 +1,18 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Leaf, LogOut, User } from "lucide-react";
+import { Bot, CalendarDays, History, Leaf, LogOut, Salad, User, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+
+const menuItems = [
+  { to: "/", label: "Início", end: true, auth: false },
+  { to: "/account", label: "Perfil", auth: true },
+  { to: "/history", label: "Histórico", auth: true },
+  { to: "/account?tab=chat", label: "Chat", auth: true, icon: Bot },
+  { to: "/history", label: "Rotina da semana", auth: true, icon: CalendarDays },
+  { to: "/history", label: "Plano alimentar", auth: true, icon: Salad },
+  { to: "/about", label: "Sobre nós", auth: false },
+  { to: "/account", label: "Conta", auth: true, icon: UserCircle },
+];
 
 export const Navbar = () => {
   const { user, signOut } = useAuth();
@@ -22,12 +33,18 @@ export const Navbar = () => {
           <span className="text-lg font-bold tracking-tight">VitaFlow</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8">
-          <NavLink to="/" end className={linkCls}>Início</NavLink>
-          <NavLink to="/generate" className={linkCls}>Criar rotina</NavLink>
-          {user && <NavLink to="/history" className={linkCls}>Histórico</NavLink>}
-          {user && <NavLink to="/account" className={linkCls}>Minha conta</NavLink>}
-          <NavLink to="/about" className={linkCls}>Sobre</NavLink>
+        <nav className="hidden lg:flex items-center gap-4">
+          {menuItems.filter((item) => !item.auth || user).map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink key={`${item.to}-${item.label}`} to={item.to} end={item.end} className={linkCls}>
+                <span className="inline-flex items-center gap-1.5">
+                  {Icon && <Icon className="h-3.5 w-3.5" />}
+                  {item.label}
+                </span>
+              </NavLink>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-2">
