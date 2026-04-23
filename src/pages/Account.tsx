@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Activity, Calendar, CheckCircle2, FileText, Plus, Ruler, Scale, UserRound } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Activity, Calendar, Camera, CheckCircle2, FileText, Plus, Ruler, Scale, UserRound } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
 import { AssistantChat } from "@/components/vitaflow/AssistantChat";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 
 type HealthProfile = {
   weight_kg: number | null;
@@ -23,9 +26,11 @@ type RoutineRow = { id: string; title: string; created_at: string; inputs: any }
 const Account = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [health, setHealth] = useState<HealthProfile | null>(null);
   const [routines, setRoutines] = useState<RoutineRow[]>([]);
   const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
@@ -35,11 +40,17 @@ const Account = () => {
     Promise.all([
       (supabase as any).from("health_profiles").select("weight_kg, height_cm, age, bioimpedance_notes, bioimpedance_file_path, active_routine_id").eq("user_id", user.id).maybeSingle(),
       supabase.from("routines").select("id, title, created_at, inputs").order("created_at", { ascending: false }).limit(8),
-    ]).then(([healthResult, routinesResult]) => {
+      (supabase as any).from("profiles").select("avatar_url").eq("id", user.id).maybeSingle(),
+    ]).then(async ([healthResult, routinesResult, profileResult]) => {
       setHealth((healthResult.data ?? null) as HealthProfile | null);
       const routineRows = (routinesResult.data ?? []) as RoutineRow[];
       setRoutines(routineRows);
       setActiveRoutineId(healthResult.data?.active_routine_id ?? routineRows[0]?.id ?? null);
+      const path = profileResult.data?.avatar_url;
+      if (path) {
+        const { data } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60);
+        setAvatarUrl(data?.signedUrl ?? null);
+      }
       setBusy(false);
     });
   }, [user, loading, navigate]);
@@ -52,6 +63,26 @@ const Account = () => {
     setActiveRoutineId(routineId);
     await (supabase as any).from("health_profiles").update({ active_routine_id: routineId }).eq("user_id", user.id);
   };
+
+  const uploadAvatar = async (file?: File) => {
+    if (!user || !file) return;
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+    const path = `${user.id}/${Date.now()}-${safeName}`;
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+    if (uploadError) {
+      toast({ title: "Erro ao enviar foto", description: uploadError.message, variant: "destructive" });
+      return;
+    }
+    const { error } = await (supabase as any).from("profiles").update({ avatar_url: path }).eq("id", user.id);
+    if (error) {
+      toast({ title: "Erro ao guardar foto", description: error.message, variant: "destructive" });
+      return;
+    }
+    const { data } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60);
+    setAvatarUrl(data?.signedUrl ?? null);
+    toast({ title: "Foto atualizada", description: "A tua foto de perfil foi guardada." });
+  };
+
   const infoCards = [
     { label: "Idade", value: health?.age ?? latestInputs.age ?? "—", suffix: health?.age || latestInputs.age ? "anos" : "", icon: UserRound },
     { label: "Peso", value: health?.weight_kg ?? latestInputs.weightKg ?? "—", suffix: health?.weight_kg || latestInputs.weightKg ? "kg" : "", icon: Scale },
@@ -76,7 +107,7 @@ const Account = () => {
         {busy ? (
           <div className="mt-10 text-sm text-muted-foreground">A carregar informações...</div>
         ) : (
-          <Tabs defaultValue="info" className="mt-8">
+          <Tabs defaultValue={params.get("tab") === "chat" ? "chat" : "info"} className="mt-8">
             <TabsList className="rounded-full">
               <TabsTrigger value="info" className="rounded-full">Informações</TabsTrigger>
               <TabsTrigger value="chat" className="rounded-full">Assistente</TabsTrigger>
@@ -84,6 +115,18 @@ const Account = () => {
             </TabsList>
 
             <TabsContent value="info" className="mt-6 space-y-6">
+              <div className="rounded-2xl bg-gradient-card border border-border/60 p-5 shadow-soft flex items-center gap-4 flex-wrap">
+                <Avatar className="h-20 w-20 border border-border/60">
+                  <AvatarImage src={avatarUrl ?? undefined} alt="Foto de perfil" />
+                  <AvatarFallback>{user?.email?.[0]?.toUpperCase() ?? "U"}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-[220px]">
+                  <h2 className="font-bold flex items-center gap-2"><Camera className="h-5 w-5 text-primary" /> Foto de perfil</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Adiciona uma imagem para personalizar a tua conta.</p>
+                </div>
+                <Input type="file" accept="image/*" className="max-w-xs" onChange={(e) => uploadAvatar(e.target.files?.[0])} />
+              </div>
+
               <div className="rounded-2xl bg-gradient-card border border-border/60 p-5 shadow-soft">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>

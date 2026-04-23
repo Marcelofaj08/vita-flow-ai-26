@@ -62,12 +62,25 @@ const tool = {
                 required: ["breakfast", "lunch", "snack", "dinner"],
                 additionalProperties: false,
               },
+              meal_calories: {
+                type: "object",
+                description: "Estimativa calórica aproximada por refeição e total diário.",
+                properties: {
+                  breakfast: { type: "number" },
+                  lunch: { type: "number" },
+                  snack: { type: "number" },
+                  dinner: { type: "number" },
+                  total: { type: "number" },
+                },
+                required: ["breakfast", "lunch", "snack", "dinner", "total"],
+                additionalProperties: false,
+              },
               workout: {
                 type: "string",
                 description: "Sugestão de treino (ou 'Descanso ativo' / 'Descanso')",
               },
             },
-            required: ["day", "schedule", "meals", "workout"],
+            required: ["day", "schedule", "meals", "meal_calories", "workout"],
             additionalProperties: false,
           },
         },
@@ -235,7 +248,7 @@ ${weekly}
 Compromissos fixos recorrentes (devem aparecer no schedule do(s) dia(s) indicado(s) com o tipo "rotina" ou apropriado):
 ${commitments}
 
-Cria os 7 dias (Segunda a Domingo) com horários realistas que respeitem o horário de escola/trabalho de cada dia e incluam todos os compromissos fixos nos respetivos dias e horas. Refeições equilibradas variadas (não repetir a mesma refeição todos os dias) e treinos apenas nos dias disponíveis. Inclui uma lista de compras realista (15-25 itens).`;
+Cria os 7 dias (Segunda a Domingo) com horários realistas que respeitem o horário de escola/trabalho de cada dia e incluam todos os compromissos fixos nos respetivos dias e horas. Refeições equilibradas variadas (não repetir a mesma refeição todos os dias), com estimativas calóricas aproximadas por refeição e total diário. Treinos apenas nos dias disponíveis. Inclui uma lista de compras realista (15-25 itens).`;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
