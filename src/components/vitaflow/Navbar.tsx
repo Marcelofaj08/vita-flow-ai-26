@@ -1,22 +1,37 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Bot, CalendarDays, History, Leaf, LogOut, Salad, User, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-
-const menuItems = [
-  { to: "/", label: "Início", end: true, auth: false },
-  { to: "/account", label: "Perfil", auth: true },
-  { to: "/history", label: "Histórico", auth: true },
-  { to: "/account?tab=chat", label: "Chat", auth: true, icon: Bot },
-  { to: "/history", label: "Rotina da semana", auth: true, icon: CalendarDays },
-  { to: "/history", label: "Plano alimentar", auth: true, icon: Salad },
-  { to: "/about", label: "Sobre nós", auth: false },
-  { to: "/account", label: "Conta", auth: true, icon: UserCircle },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 export const Navbar = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) { setActiveRoutineId(null); return; }
+    (supabase as any)
+      .from("health_profiles")
+      .select("active_routine_id")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }: any) => setActiveRoutineId(data?.active_routine_id ?? null));
+  }, [user]);
+
+  const routineHref = activeRoutineId ? `/result?id=${activeRoutineId}&tab=week` : "/history";
+  const mealsHref = activeRoutineId ? `/result?id=${activeRoutineId}&tab=meals` : "/history";
+  const menuItems = [
+    { to: "/", label: "Início", end: true, auth: false },
+    { to: "/account", label: "Perfil", auth: true },
+    { to: "/history", label: "Histórico", auth: true, icon: History },
+    { to: "/account?tab=chat", label: "Chat", auth: true, icon: Bot },
+    { to: routineHref, label: "Rotina da semana", auth: true, icon: CalendarDays },
+    { to: mealsHref, label: "Plano alimentar", auth: true, icon: Salad },
+    { to: "/about", label: "Sobre nós", auth: false },
+    { to: "/account", label: "Conta", auth: true, icon: UserCircle },
+  ];
 
   const linkCls = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium transition-colors hover:text-primary ${
@@ -33,7 +48,7 @@ export const Navbar = () => {
           <span className="text-lg font-bold tracking-tight">VitaFlow</span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-4">
+        <nav className="hidden lg:flex items-center gap-3">
           {menuItems.filter((item) => !item.auth || user).map((item) => {
             const Icon = item.icon;
             return (
