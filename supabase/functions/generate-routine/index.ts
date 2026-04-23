@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -137,21 +138,64 @@ const assistantTool = {
   },
 };
 
+const MAX_JSON_CHARS = 6_000;
+const allowedActions = new Set(["generate_plan", "daily_suggestion", "reorganize_day", "assistant_chat"]);
+
+const text = (value: unknown, max = 300) =>
+  typeof value === "string" ? value.replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, max) : "";
+
+const num = (value: unknown, fallback = 0, min = 0, max = 100) => {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+};
+
+const safeJson = (value: unknown, max = MAX_JSON_CHARS) => text(JSON.stringify(value ?? {}), max);
+
+const authUser = async (req: Request) => {
+  const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+  if (!url || !key) throw new Error("Auth configuration missing");
+
+  const supabase = createClient(url, key, { global: { headers: { Authorization: `Bearer ${token}` } } });
+  const { data, error } = await supabase.auth.getUser(token);
+  return error ? null : data.user;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const user = await authUser(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Não autorizado." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const inputs = await req.json();
+    const action = text(inputs.action || "generate_plan", 40);
+    if (!allowedActions.has(action)) {
+      return new Response(JSON.stringify({ error: "Ação inválida." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const weekly = Array.isArray(inputs.weeklySchedule) && inputs.weeklySchedule.length
-      ? inputs.weeklySchedule.map((s: any) => `  - ${s.day}: ${s.hours || "Livre"}`).join("\n")
-      : `  (genérico) ${inputs.schedule || "não indicado"}`;
+      ? inputs.weeklySchedule.slice(0, 7).map((s: any) => `  - ${text(s.day, 20)}: ${text(s.hours, 120) || "Livre"}`).join("\n")
+      : `  (genérico) ${text(inputs.schedule, 500) || "não indicado"}`;
 
     const commitments = Array.isArray(inputs.fixedCommitments) && inputs.fixedCommitments.length
       ? inputs.fixedCommitments
-          .map((c: any) => `  - ${c.title} | ${c.days} | ${c.time}`)
+          .slice(0, 20)
+          .map((c: any) => `  - ${text(c.title, 80)} | ${text(c.days, 80)} | ${text(c.time, 40)}`)
           .join("\n")
       : "  (nenhum)";
 
