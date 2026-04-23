@@ -199,12 +199,12 @@ serve(async (req) => {
           .join("\n")
       : "  (nenhum)";
 
-    if (inputs.action === "daily_suggestion") {
+    if (action === "daily_suggestion") {
       const userPrompt = `Com base nesta rotina semanal e progresso, gera uma sugestão diária prática e segura para hoje.
-Nome: ${inputs.name || "utilizador"}
-Dia: ${inputs.day || "hoje"}
-Progresso concluído: ${inputs.progress || 0}%
-Rotina: ${JSON.stringify(inputs.plan || {})}
+Nome: ${text(inputs.name, 40) || "utilizador"}
+Dia: ${text(inputs.day, 20) || "hoje"}
+Progresso concluído: ${num(inputs.progress, 0, 0, 100)}%
+Rotina: ${safeJson(inputs.plan)}
 
 Foca em adaptação de treino, alimentação, hidratação, descanso ou organização. Não faças recomendações extremas.`;
 
@@ -225,10 +225,10 @@ Foca em adaptação de treino, alimentação, hidratação, descanso ou organiza
       return new Response(JSON.stringify(JSON.parse(call.function.arguments)), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (inputs.action === "reorganize_day") {
-      const userPrompt = `O utilizador falhou o dia ${inputs.day}. Reorganiza APENAS esse dia da rotina, mantendo tudo seguro e realista.
-Dados pessoais e horários: ${JSON.stringify(inputs.inputs || {})}
-Plano atual: ${JSON.stringify(inputs.plan || {})}
+    if (action === "reorganize_day") {
+      const userPrompt = `O utilizador falhou o dia ${text(inputs.day, 20)}. Reorganiza APENAS esse dia da rotina, mantendo tudo seguro e realista.
+Dados pessoais e horários: ${safeJson(inputs.inputs)}
+Plano atual: ${safeJson(inputs.plan)}
 
 Mantém o mesmo nome do dia, inclui refeições equilibradas, descanso e adapta o treino sem exageros.`;
 
@@ -249,12 +249,12 @@ Mantém o mesmo nome do dia, inclui refeições equilibradas, descanso e adapta 
       return new Response(JSON.stringify({ dayPlan: JSON.parse(call.function.arguments) }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (inputs.action === "assistant_chat") {
+    if (action === "assistant_chat") {
       const userPrompt = `Responde à pergunta do utilizador com base no perfil e rotina disponíveis.
-Dados pessoais/saúde: ${JSON.stringify(inputs.healthProfile || {})}
-Dados da última rotina: ${JSON.stringify(inputs.routine || {})}
-Histórico recente do chat: ${JSON.stringify(inputs.messages || [])}
-Pergunta: ${inputs.message || ""}
+Dados pessoais/saúde: ${safeJson(inputs.healthProfile, 2_000)}
+Dados da última rotina: ${safeJson(inputs.routine)}
+Histórico recente do chat: ${safeJson(Array.isArray(inputs.messages) ? inputs.messages.slice(-10) : [], 3_000)}
+Pergunta: ${text(inputs.message, 600)}
 
 Sê claro, seguro, motivador e evita diagnósticos médicos. Se faltar informação, pede dados específicos.`;
 
