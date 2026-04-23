@@ -161,7 +161,14 @@ const Account = () => {
                   <h2 className="font-bold flex items-center gap-2"><Camera className="h-5 w-5 text-primary" /> Foto de perfil</h2>
                   <p className="text-sm text-muted-foreground mt-1">Adiciona uma imagem para personalizar a tua conta.</p>
                 </div>
-                <Input type="file" accept="image/*" className="max-w-xs" onChange={(e) => uploadAvatar(e.target.files?.[0])} />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Input ref={avatarInputRef} type="file" accept="image/*" disabled={avatarBusy} className="max-w-xs" onChange={(e) => uploadAvatar(e.target.files?.[0])} />
+                  {avatarPath && (
+                    <Button type="button" variant="outline" disabled={avatarBusy} onClick={removeAvatar} className="rounded-full">
+                      Remover foto
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="rounded-2xl bg-gradient-card border border-border/60 p-5 shadow-soft">
