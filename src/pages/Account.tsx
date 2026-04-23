@@ -21,7 +21,7 @@ type HealthProfile = {
   active_routine_id: string | null;
 };
 
-type RoutineRow = { id: string; title: string; created_at: string; inputs: any };
+type RoutineRow = { id: string; title: string; created_at: string; inputs: Record<string, unknown> };
 
 const Account = () => {
   const { user, loading } = useAuth();
@@ -41,9 +41,9 @@ const Account = () => {
     if (!user) { navigate("/auth"); return; }
 
     Promise.all([
-      (supabase as any).from("health_profiles").select("weight_kg, height_cm, age, bioimpedance_notes, bioimpedance_file_path, active_routine_id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("health_profiles").select("weight_kg, height_cm, age, bioimpedance_notes, bioimpedance_file_path, active_routine_id").eq("user_id", user.id).maybeSingle(),
       supabase.from("routines").select("id, title, created_at, inputs").order("created_at", { ascending: false }).limit(8),
-      (supabase as any).from("profiles").select("avatar_url").eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle(),
     ]).then(async ([healthResult, routinesResult, profileResult]) => {
       setHealth((healthResult.data ?? null) as HealthProfile | null);
       const routineRows = (routinesResult.data ?? []) as RoutineRow[];
@@ -67,7 +67,7 @@ const Account = () => {
   const setActiveRoutine = async (routineId: string) => {
     if (!user) return;
     setActiveRoutineId(routineId);
-    await (supabase as any).from("health_profiles").update({ active_routine_id: routineId }).eq("user_id", user.id);
+    await supabase.from("health_profiles").update({ active_routine_id: routineId }).eq("user_id", user.id);
   };
 
   const uploadAvatar = async (file?: File) => {
@@ -81,7 +81,7 @@ const Account = () => {
       setAvatarBusy(false);
       return;
     }
-    const { error } = await (supabase as any).from("profiles").update({ avatar_url: path }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({ avatar_url: path }).eq("id", user.id);
     if (error) {
       toast({ title: "Erro ao guardar foto", description: error.message, variant: "destructive" });
       setAvatarBusy(false);
@@ -103,7 +103,7 @@ const Account = () => {
     setAvatarUrl(null);
     if (avatarInputRef.current) avatarInputRef.current.value = "";
 
-    const { error } = await (supabase as any).from("profiles").update({ avatar_url: null }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
     if (error) {
       setAvatarPath(previousPath);
       if (previousPath) {
