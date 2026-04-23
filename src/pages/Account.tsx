@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Activity, Calendar, Camera, CheckCircle2, FileText, Plus, Ruler, Scale, UserRound } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
@@ -31,7 +31,10 @@ const Account = () => {
   const [routines, setRoutines] = useState<RoutineRow[]>([]);
   const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarPath, setAvatarPath] = useState<string | null>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [busy, setBusy] = useState(true);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -47,9 +50,12 @@ const Account = () => {
       setRoutines(routineRows);
       setActiveRoutineId(healthResult.data?.active_routine_id ?? routineRows[0]?.id ?? null);
       const path = profileResult.data?.avatar_url;
+      setAvatarPath(path ?? null);
       if (path) {
         const { data } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60);
         setAvatarUrl(data?.signedUrl ?? null);
+      } else {
+        setAvatarUrl(null);
       }
       setBusy(false);
     });
@@ -66,21 +72,52 @@ const Account = () => {
 
   const uploadAvatar = async (file?: File) => {
     if (!user || !file) return;
+    setAvatarBusy(true);
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
     const path = `${user.id}/${Date.now()}-${safeName}`;
     const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
     if (uploadError) {
       toast({ title: "Erro ao enviar foto", description: uploadError.message, variant: "destructive" });
+      setAvatarBusy(false);
       return;
     }
     const { error } = await (supabase as any).from("profiles").update({ avatar_url: path }).eq("id", user.id);
     if (error) {
       toast({ title: "Erro ao guardar foto", description: error.message, variant: "destructive" });
+      setAvatarBusy(false);
       return;
     }
     const { data } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60);
+    if (avatarPath && avatarPath !== path) await supabase.storage.from("avatars").remove([avatarPath]);
+    setAvatarPath(path);
     setAvatarUrl(data?.signedUrl ?? null);
+    setAvatarBusy(false);
     toast({ title: "Foto atualizada", description: "A tua foto de perfil foi guardada." });
+  };
+
+  const removeAvatar = async () => {
+    if (!user) return;
+    setAvatarBusy(true);
+    const previousPath = avatarPath;
+    setAvatarPath(null);
+    setAvatarUrl(null);
+    if (avatarInputRef.current) avatarInputRef.current.value = "";
+
+    const { error } = await (supabase as any).from("profiles").update({ avatar_url: null }).eq("id", user.id);
+    if (error) {
+      setAvatarPath(previousPath);
+      if (previousPath) {
+        const { data } = await supabase.storage.from("avatars").createSignedUrl(previousPath, 60 * 60);
+        setAvatarUrl(data?.signedUrl ?? null);
+      }
+      setAvatarBusy(false);
+      toast({ title: "Erro ao remover foto", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    if (previousPath) await supabase.storage.from("avatars").remove([previousPath]);
+    setAvatarBusy(false);
+    toast({ title: "Foto removida", description: "O avatar inicial voltou a aparecer no teu perfil." });
   };
 
   const infoCards = [
