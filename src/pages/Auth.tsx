@@ -68,7 +68,9 @@ const Auth = () => {
     } catch (e: any) {
       const message = e.message === "Invalid login credentials"
         ? "Email ou palavra-passe incorretos. Se acabaste de criar conta, confirma primeiro o email."
-        : e.message ?? "Tenta novamente";
+        : e.message === "Email not confirmed"
+          ? "Confirma o teu email antes de iniciar sessão. Enviámos o link para a tua caixa de entrada."
+          : e.message ?? "Tenta novamente";
       toast({ title: "Erro ao entrar", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
