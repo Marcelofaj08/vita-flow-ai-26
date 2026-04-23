@@ -8,6 +8,8 @@ import { toast } from "@/hooks/use-toast";
 
 type Message = { id?: string; role: "user" | "assistant"; content: string; created_at?: string };
 
+const isMessageRole = (role: string): role is Message["role"] => role === "user" || role === "assistant";
+
 export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | null }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -17,13 +19,13 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
-      const { data: rows } = await (supabase as any)
+      const { data: rows } = await supabase
         .from("assistant_messages")
         .select("id, role, content, created_at")
         .eq("user_id", data.user.id)
         .order("created_at", { ascending: true })
         .limit(40);
-      setMessages((rows ?? []) as Message[]);
+      setMessages((rows ?? []).filter((row) => isMessageRole(row.role)) as Message[]);
     });
   }, []);
 
@@ -43,9 +45,9 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
       const userMessage: Message = { role: "user", content: text };
       setMessages((prev) => [...prev, userMessage]);
 
-      await (supabase as any).from("assistant_messages").insert({ user_id: user.id, role: "user", content: text });
+      await supabase.from("assistant_messages").insert({ user_id: user.id, role: "user", content: text });
       const [{ data: healthProfile }, { data: routine }] = await Promise.all([
-        (supabase as any).from("health_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("health_profiles").select("*").eq("user_id", user.id).maybeSingle(),
         activeRoutineId
           ? supabase.from("routines").select("id, title, inputs, plan, created_at").eq("id", activeRoutineId).maybeSingle()
           : supabase.from("routines").select("id, title, inputs, plan, created_at").order("created_at", { ascending: false }).limit(1).maybeSingle(),
@@ -57,9 +59,9 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
       if (error || replyData?.error) throw new Error(replyData?.error || error?.message);
       const assistantMessage: Message = { role: "assistant", content: replyData.reply || "Estou aqui para ajudar." };
       setMessages((prev) => [...prev, assistantMessage]);
-      await (supabase as any).from("assistant_messages").insert({ user_id: user.id, role: "assistant", content: assistantMessage.content });
-    } catch (e: any) {
-      toast({ title: "Erro no assistente", description: e.message, variant: "destructive" });
+      await supabase.from("assistant_messages").insert({ user_id: user.id, role: "assistant", content: assistantMessage.content });
+    } catch (e: unknown) {
+      toast({ title: "Erro no assistente", description: e instanceof Error ? e.message : "Tenta novamente.", variant: "destructive" });
     } finally {
       setLoading(false);
     }

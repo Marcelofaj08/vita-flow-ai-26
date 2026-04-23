@@ -65,10 +65,13 @@ const Auth = () => {
         if (!data.session) throw new Error("Não foi possível iniciar sessão. Confirma o teu email e tenta novamente.");
         navigate("/generate", { replace: true });
       }
-    } catch (e: any) {
-      const message = e.message === "Invalid login credentials"
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : undefined;
+      const message = errorMessage === "Invalid login credentials"
         ? "Email ou palavra-passe incorretos. Se acabaste de criar conta, confirma primeiro o email."
-        : e.message ?? "Tenta novamente";
+        : errorMessage === "Email not confirmed"
+          ? "Confirma o teu email antes de iniciar sessão. Enviámos o link para a tua caixa de entrada."
+          : errorMessage ?? "Tenta novamente";
       toast({ title: "Erro ao entrar", description: message, variant: "destructive" });
     } finally {
       setLoading(false);

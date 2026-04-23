@@ -140,9 +140,11 @@ const assistantTool = {
 
 const MAX_JSON_CHARS = 6_000;
 const allowedActions = new Set(["generate_plan", "daily_suggestion", "reorganize_day", "assistant_chat"]);
+type ScheduleInput = { day?: unknown; hours?: unknown };
+type CommitmentInput = { title?: unknown; days?: unknown; time?: unknown };
 
 const text = (value: unknown, max = 300) =>
-  typeof value === "string" ? value.replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, max) : "";
+  typeof value === "string" ? value.replace(/\p{Cc}/gu, " ").trim().slice(0, max) : "";
 
 const num = (value: unknown, fallback = 0, min = 0, max = 100) => {
   const parsed = typeof value === "number" ? value : Number(value);
@@ -189,13 +191,13 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const weekly = Array.isArray(inputs.weeklySchedule) && inputs.weeklySchedule.length
-      ? inputs.weeklySchedule.slice(0, 7).map((s: any) => `  - ${text(s.day, 20)}: ${text(s.hours, 120) || "Livre"}`).join("\n")
+      ? inputs.weeklySchedule.slice(0, 7).map((s: ScheduleInput) => `  - ${text(s.day, 20)}: ${text(s.hours, 120) || "Livre"}`).join("\n")
       : `  (genérico) ${text(inputs.schedule, 500) || "não indicado"}`;
 
     const commitments = Array.isArray(inputs.fixedCommitments) && inputs.fixedCommitments.length
       ? inputs.fixedCommitments
           .slice(0, 20)
-          .map((c: any) => `  - ${text(c.title, 80)} | ${text(c.days, 80)} | ${text(c.time, 40)}`)
+          .map((c: CommitmentInput) => `  - ${text(c.title, 80)} | ${text(c.days, 80)} | ${text(c.time, 40)}`)
           .join("\n")
       : "  (nenhum)";
 

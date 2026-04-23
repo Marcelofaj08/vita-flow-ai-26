@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { RoutineInputs, FixedCommitment } from "@/types/vitaflow";
+import type { Json } from "@/integrations/supabase/types";
 
 const DAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
@@ -114,7 +115,7 @@ const Generate = () => {
       }
 
       const enrichedForm = { ...form, bioimpedanceFilePath };
-      const { error: profileError } = await (supabase as any).from("health_profiles").upsert({
+      const { error: profileError } = await supabase.from("health_profiles").upsert({
         user_id: session.user.id,
         weight_kg: enrichedForm.weightKg ? Number(enrichedForm.weightKg) : null,
         height_cm: enrichedForm.heightCm ? Number(enrichedForm.heightCm) : null,
@@ -133,23 +134,23 @@ const Generate = () => {
         .insert({
           user_id: session.user.id,
           title: `Rotina de ${form.name}`,
-          inputs: enrichedForm as any,
+          inputs: enrichedForm as unknown as Json,
           plan: data.plan,
         })
         .select("id")
         .single();
       if (e2) throw e2;
-      await (supabase as any).from("health_profiles").update({ active_routine_id: row.id }).eq("user_id", session.user.id);
+      await supabase.from("health_profiles").update({ active_routine_id: row.id }).eq("user_id", session.user.id);
       sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: data.plan, inputs: enrichedForm }));
       const resultUrl = `/result?id=${row.id}`;
       if (resultWindow) resultWindow.location.href = resultUrl;
       else window.open(resultUrl, "_blank");
       navigate("/history");
-    } catch (e: any) {
+    } catch (e: unknown) {
       resultWindow?.close();
       toast({
         title: "Não conseguimos gerar a rotina",
-        description: e.message ?? "Tenta novamente em instantes.",
+        description: e instanceof Error ? e.message : "Tenta novamente em instantes.",
         variant: "destructive",
       });
     } finally {
@@ -222,7 +223,7 @@ const Generate = () => {
 
           <div>
             <Label>Qual é o teu objetivo?</Label>
-            <RadioGroup value={form.goal} onValueChange={(v) => update("goal", v as any)} className="mt-2 grid sm:grid-cols-3 gap-3">
+            <RadioGroup value={form.goal} onValueChange={(v) => update("goal", v as RoutineInputs["goal"])} className="mt-2 grid sm:grid-cols-3 gap-3">
               {[
                 { v: "manter", l: "Manter saúde", e: "💚" },
                 { v: "perder", l: "Perder peso", e: "🔥" },

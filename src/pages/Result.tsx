@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import jsPDF from "jspdf";
-import { ArrowLeft, RefreshCw, ShoppingCart, Sparkles, Coffee, Utensils, Apple, Moon, Dumbbell, BookOpen, Briefcase, Smile, Sun, Download, CheckCircle2, Wand2, CalendarPlus } from "lucide-react";
+import { ArrowLeft, RefreshCw, ShoppingCart, Sparkles, Coffee, Utensils, Apple, Moon, Dumbbell, BookOpen, Briefcase, Smile, Sun, Download, CheckCircle2, Wand2, CalendarPlus, type LucideIcon } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoutinePlan, RoutineInputs, ScheduleBlock } from "@/types/vitaflow";
 import { toast } from "@/hooks/use-toast";
+import type { Json } from "@/integrations/supabase/types";
 
-const typeMeta: Record<ScheduleBlock["type"], { icon: any; cls: string; label: string }> = {
+const typeMeta: Record<ScheduleBlock["type"], { icon: LucideIcon; cls: string; label: string }> = {
   sono: { icon: Moon, cls: "bg-secondary/15 text-secondary border-secondary/30", label: "Sono" },
   estudo: { icon: BookOpen, cls: "bg-accent text-accent-foreground border-border", label: "Estudo" },
   treino: { icon: Dumbbell, cls: "bg-primary/15 text-primary border-primary/30", label: "Treino" },
@@ -82,8 +83,8 @@ const Result = () => {
           navigate("/generate");
           return;
         }
-        setPlan(data.plan as any);
-        setInputs(data.inputs as any);
+        setPlan(data.plan as unknown as RoutinePlan);
+        setInputs(data.inputs as unknown as RoutineInputs);
         setCompleted(JSON.parse(localStorage.getItem(`vitaflow:progress:${id}`) || "{}"));
       });
     } else {
@@ -180,8 +181,8 @@ const Result = () => {
       const { data, error } = await supabase.functions.invoke("generate-routine", { body: { action: "daily_suggestion", plan, progress, day: today, name: inputs.name } });
       if (error || data?.error) throw new Error(data?.error || error?.message);
       setSuggestion(data.suggestion);
-    } catch (e: any) {
-      toast({ title: "Não foi possível gerar a sugestão", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Não foi possível gerar a sugestão", description: e instanceof Error ? e.message : "Tenta novamente.", variant: "destructive" });
     } finally {
       setAiLoading(null);
     }
@@ -195,11 +196,11 @@ const Result = () => {
       if (error || data?.error) throw new Error(data?.error || error?.message);
       const next = { ...plan, days: plan.days.map((d) => (d.day === day ? data.dayPlan : d)) };
       setPlan(next);
-      if (id) await supabase.from("routines").update({ plan: next as any }).eq("id", id);
+      if (id) await supabase.from("routines").update({ plan: next as unknown as Json }).eq("id", id);
       else sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: next, inputs }));
       toast({ title: "Dia reorganizado", description: `${day} foi ajustado pela IA.` });
-    } catch (e: any) {
-      toast({ title: "Não foi possível reorganizar", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Não foi possível reorganizar", description: e instanceof Error ? e.message : "Tenta novamente.", variant: "destructive" });
     } finally {
       setAiLoading(null);
     }
