@@ -12,6 +12,8 @@ import History from "./pages/History.tsx";
 import About from "./pages/About.tsx";
 import Privacy from "./pages/Privacy.tsx";
 import Account from "./pages/Account.tsx";
+import Admin from "./pages/Admin.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,10 +26,12 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/generate" element={<Generate />} />
           <Route path="/result" element={<Result />} />
           <Route path="/history" element={<History />} />
           <Route path="/account" element={<Account />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/about" element={<About />} />
           <Route path="/privacy" element={<Privacy />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

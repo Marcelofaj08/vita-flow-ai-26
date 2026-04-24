@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Bot, CalendarDays, History, Leaf, LogOut, Menu, Salad, User, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,15 +12,41 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (!user) { setActiveRoutineId(null); return; }
+    if (!user) {
+      setActiveRoutineId(null);
+      setAvatarUrl(null);
+      setIsAdmin(false);
+      return;
+    }
     supabase
       .from("health_profiles")
       .select("active_routine_id")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => setActiveRoutineId(data?.active_routine_id ?? null));
+
+    supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(async ({ data }) => {
+        if (!data?.avatar_url) { setAvatarUrl(null); return; }
+        const { data: signed } = await supabase.storage.from("avatars").createSignedUrl(data.avatar_url, 60 * 60);
+        setAvatarUrl(signed?.signedUrl ?? null);
+      });
+
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
   const routineHref = activeRoutineId ? `/result?id=${activeRoutineId}&tab=week` : "/history";
@@ -41,6 +68,9 @@ export const Navbar = () => {
     }`;
 
   const visibleItems = menuItems.filter((item) => !item.auth || user);
+  if (isAdmin) {
+    visibleItems.push({ to: "/admin", label: "Admin", auth: true, icon: UserCircle });
+  }
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-lg">
@@ -129,6 +159,14 @@ export const Navbar = () => {
         <div className="flex items-center gap-2">
           {user ? (
             <>
+              <Link to="/account" className="hidden sm:block">
+                <Avatar className="h-8 w-8 border border-border/60 hover:ring-2 hover:ring-primary/40 transition-all">
+                  <AvatarImage src={avatarUrl ?? undefined} alt="Foto de perfil" />
+                  <AvatarFallback className="text-xs bg-gradient-hero text-primary-foreground">
+                    {user.email?.[0]?.toUpperCase() ?? "U"}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
               <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="h-4 w-4" />
                 <span className="max-w-[140px] truncate">{user.email}</span>

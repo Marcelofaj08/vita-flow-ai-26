@@ -1,10 +1,16 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Bot, Send, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import { Bot, Loader2, Send, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+const QUICK_PROMPTS = [
+  "Como ajusto o treino se dormi mal?",
+  "Sugestão de snack saudável",
+  "Como me manter hidratado?",
+];
 
 type Message = { id?: string; role: "user" | "assistant"; content: string; created_at?: string };
 
@@ -73,22 +79,54 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
         <div className="h-10 w-10 rounded-xl bg-gradient-hero flex items-center justify-center"><Bot className="h-5 w-5 text-primary-foreground" /></div>
         <div>
           <h2 className="font-bold">Assistente VitaFlow</h2>
-          <p className="text-sm text-muted-foreground">Usa o teu perfil e a rotina ativa para responder melhor.</p>
+          <p className="text-sm text-muted-foreground">Respostas curtas e diretas, com base no teu perfil e rotina.</p>
         </div>
       </div>
       <ScrollArea className="h-[420px] p-4">
         <div className="space-y-3">
-          {messages.length === 0 && <div className="text-sm text-muted-foreground">Pergunta sobre treino, refeições, rotina, descanso ou ajustes ao teu dia.</div>}
+          {messages.length === 0 && (
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">Pergunta sobre treino, refeições, rotina, descanso ou ajustes ao teu dia.</div>
+              <div className="flex flex-wrap gap-2">
+                {QUICK_PROMPTS.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => setInput(prompt)}
+                    className="text-xs rounded-full border border-border bg-background px-3 py-1.5 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {messages.map((message, index) => {
             const isUser = message.role === "user";
             return (
               <div key={message.id ?? index} className={`flex gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
                 {!isUser && <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center shrink-0"><Bot className="h-4 w-4 text-accent-foreground" /></div>}
-                <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${isUser ? "bg-primary text-primary-foreground" : "bg-background border border-border/60"}`}>{message.content}</div>
+                <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${isUser ? "bg-primary text-primary-foreground" : "bg-background border border-border/60"}`}>
+                  {isUser ? (
+                    <span className="whitespace-pre-wrap">{message.content}</span>
+                  ) : (
+                    <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0 prose-headings:mt-1 prose-headings:mb-1.5 prose-headings:text-base">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
+                  )}
+                </div>
                 {isUser && <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0"><User className="h-4 w-4 text-muted-foreground" /></div>}
               </div>
             );
           })}
+          {loading && (
+            <div className="flex gap-2 justify-start">
+              <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center shrink-0"><Bot className="h-4 w-4 text-accent-foreground" /></div>
+              <div className="rounded-2xl px-4 py-2 text-sm bg-background border border-border/60 flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> a pensar...
+              </div>
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
       </ScrollArea>
