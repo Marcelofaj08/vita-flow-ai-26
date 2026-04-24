@@ -47,7 +47,17 @@ const Auth = () => {
           password: parsed.data.password,
           options: { emailRedirectTo: `${window.location.origin}/generate` },
         });
-        if (error) throw error;
+        if (error) {
+          if (/already|registered|exists/i.test(error.message)) {
+            toast({
+              title: "Já existe conta com este email",
+              description: "Vai para 'Entrar' e usa a tua palavra-passe. Esqueceste-te? Podemos enviar um link de recuperação.",
+            });
+            setTab("signin");
+            return;
+          }
+          throw error;
+        }
 
         if (data.session) {
           toast({ title: "Conta criada!", description: "Já podes começar a tua rotina." });
