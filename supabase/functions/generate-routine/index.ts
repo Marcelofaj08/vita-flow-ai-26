@@ -317,7 +317,14 @@ ${weekly}
 Compromissos fixos recorrentes (devem aparecer no schedule do(s) dia(s) indicado(s) com o tipo "rotina" ou apropriado):
 ${commitments}
 
-Cria os 7 dias (Segunda a Domingo) com horários realistas que respeitem o horário de escola/trabalho de cada dia e incluam todos os compromissos fixos nos respetivos dias e horas. Refeições equilibradas variadas (não repetir a mesma refeição todos os dias), com estimativas calóricas aproximadas por refeição e total diário. Treinos apenas nos dias disponíveis. Inclui uma lista de compras realista (15-25 itens), com NOME, QUANTIDADE total para a semana (em kg, g, L, unidades, etc.) e QUALIDADE recomendada (ex: fresco, biológico, integral, magro), agrupada por CATEGORIA (Proteínas, Hortícolas, Frutas, Lacticínios, Mercearia, etc.).`;
+Cria os 7 dias (Segunda a Domingo) com horários realistas que respeitem o horário de escola/trabalho de cada dia e incluam todos os compromissos fixos nos respetivos dias e horas. Refeições equilibradas variadas (não repetir a mesma refeição todos os dias), com estimativas calóricas aproximadas por refeição e total diário. Treinos apenas nos dias disponíveis.
+
+LISTA DE COMPRAS (obrigatório, 15-25 itens):
+- Calcula a QUANTIDADE TOTAL para a semana com base no número de porções que cada ingrediente aparece nas refeições dos 7 dias e no peso/idade/objetivo do utilizador.
+- Usa unidades concretas e realistas: kg, g, L, ml, unidades, dúzias, embalagens. Ex: "1,4 kg" de peito de frango, "12 ovos", "500 g" de aveia, "2 L" de leite, "6 unidades" de banana.
+- NUNCA deixes a quantidade vazia, "a gosto" ou "q.b." — tem de ser uma quantidade comprável no supermercado.
+- Soma todas as ocorrências do ingrediente na semana antes de indicar a quantidade (ex: se aparece em 4 almoços a 150 g, indica "600 g").
+- Inclui NOME, QUANTIDADE total para a semana, QUALIDADE recomendada (ex: fresco, biológico, integral, magro) e CATEGORIA (Proteínas, Hortícolas, Frutas, Lacticínios, Mercearia, etc.).`;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
