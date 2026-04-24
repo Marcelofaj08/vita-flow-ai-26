@@ -11,6 +11,12 @@ const SYSTEM_PROMPT = `És o VitaFlow, um assistente de bem-estar para jovens (1
 Crias rotinas semanais EQUILIBRADAS e SEGURAS — sem dietas extremas, sem restrições calóricas perigosas, sem treinos exagerados.
 Foca em: hidratação, sono regular, alimentação variada, atividade moderada, tempo de descanso e bem-estar mental.
 Adapta-te ao horário, objetivo e restrições do utilizador.
+
+Regras de logística obrigatórias quando montares o schedule do dia:
+1. TEMPO DE DESLOCAÇÃO: deixa SEMPRE 20-30 min antes do início da escola/trabalho ou de qualquer compromisso fixo (e 15-20 min depois) para o utilizador se deslocar e preparar. Não coloques refeições nem treino exatamente colados ao horário de saída/chegada.
+2. DIGESTÃO: deixa pelo menos 45-60 min entre o fim de uma refeição principal (almoço/jantar) e o início de um treino, e pelo menos 30 min entre o pequeno-almoço/snack e exercício moderado. Após o jantar deve haver 60-90 min antes de dormir.
+3. Hidratação ao longo do dia e janela de sono respeitada.
+
 Responde SEMPRE em português europeu.
 Devolves SEMPRE através da função structured "generate_plan" — nunca texto livre.`;
 
@@ -140,7 +146,7 @@ const assistantTool = {
     parameters: {
       type: "object",
       properties: {
-        reply: { type: "string", description: "Resposta em português europeu, prática e personalizada." },
+        reply: { type: "string", description: "Resposta em português europeu, curta (máx 120 palavras), em markdown, com título curto opcional, bullets quando útil e tom direto." },
       },
       required: ["reply"],
       additionalProperties: false,
@@ -268,7 +274,14 @@ Dados da última rotina: ${safeJson(inputs.routine)}
 Histórico recente do chat: ${safeJson(Array.isArray(inputs.messages) ? inputs.messages.slice(-10) : [], 3_000)}
 Pergunta: ${text(inputs.message, 600)}
 
-Sê claro, seguro, motivador e evita diagnósticos médicos. Se faltar informação, pede dados específicos.`;
+REGRAS DE FORMATO (obrigatórias):
+- Português europeu, máximo 120 palavras.
+- Estrutura em markdown:
+  - Começa com 1 frase direta a responder à pergunta.
+  - Se houver passos, usa lista com no máximo 4 bullets curtos (1 linha cada).
+  - Termina com 1 dica prática ou pergunta de follow-up (opcional).
+- Sem introduções genéricas tipo "Claro!" ou "Ótima pergunta!".
+- Sem diagnósticos médicos. Se faltar info crítica, pede APENAS o dado em falta numa frase.`;
 
       const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",

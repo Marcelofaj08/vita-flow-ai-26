@@ -20,10 +20,20 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate("/generate", { replace: true });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        if (event === "SIGNED_IN") {
+          supabase.from("user_access_log").insert({
+            user_id: session.user.id,
+            event: "sign_in",
+            user_agent: navigator.userAgent.slice(0, 300),
+          }).then(() => undefined);
+        }
+        navigate("/generate", { replace: true });
+      }
     });
 
     supabase.auth.getSession().then(({ data }) => {
@@ -32,6 +42,26 @@ const Auth = () => {
 
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
+
+  const handleReset = async () => {
+    const trimmed = email.trim();
+    if (!trimmed || !/.+@.+\..+/.test(trimmed)) {
+      toast({ title: "Indica o teu email", description: "Escreve o email no campo acima e clica em 'Esqueci-me' novamente.", variant: "destructive" });
+      return;
+    }
+    setResetting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast({ title: "Email enviado", description: "Verifica a tua caixa de entrada para definir uma nova palavra-passe." });
+    } catch (e: unknown) {
+      toast({ title: "Não foi possível enviar", description: e instanceof Error ? e.message : "Tenta novamente.", variant: "destructive" });
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const handle = async (mode: "signin" | "signup") => {
     const parsed = schema.safeParse({ email, password });
@@ -123,6 +153,16 @@ const Auth = () => {
                 <Button onClick={() => handle(m)} disabled={loading} className="w-full bg-gradient-hero text-primary-foreground border-0 h-11 rounded-full shadow-soft">
                   {loading ? "Aguarda..." : m === "signin" ? "Entrar" : "Criar conta"}
                 </Button>
+                {m === "signin" && (
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    disabled={resetting}
+                    className="w-full text-center text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-60"
+                  >
+                    {resetting ? "A enviar email..." : "Esqueci-me da palavra-passe"}
+                  </button>
+                )}
               </TabsContent>
             ))}
           </Tabs>
