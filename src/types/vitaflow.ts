@@ -52,5 +52,12 @@ export type RoutinePlan = {
   summary: string;
   weekly_tip: string;
   days: DayPlan[];
-  shopping_list: string[];
+  shopping_list: ShoppingItem[];
+};
+
+export type ShoppingItem = {
+  name: string;
+  quantity: string;
+  quality?: string;
+  category?: string;
 };
