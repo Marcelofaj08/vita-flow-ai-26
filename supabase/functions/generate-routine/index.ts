@@ -370,7 +370,7 @@ Cria os 7 dias (Segunda a Domingo) com horários realistas que respeitem o horá
   } catch (e) {
     console.error("generate-routine error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: "Ocorreu um erro interno. Por favor tenta novamente." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
