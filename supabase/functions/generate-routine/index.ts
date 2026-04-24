@@ -87,8 +87,18 @@ const tool = {
         },
         shopping_list: {
           type: "array",
-          description: "Lista de compras agregada para a semana.",
-          items: { type: "string" },
+          description: "Lista de compras agregada para a semana, com quantidade e qualidade recomendada.",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Nome do ingrediente. Ex: Frango" },
+              quantity: { type: "string", description: "Quantidade total para a semana. Ex: 1,2 kg" },
+              quality: { type: "string", description: "Qualidade/dica de escolha. Ex: peito fresco, biológico se possível" },
+              category: { type: "string", description: "Categoria. Ex: Proteínas, Hortícolas, Mercearia, Lacticínios, Frutas" },
+            },
+            required: ["name", "quantity", "quality", "category"],
+            additionalProperties: false,
+          },
         },
       },
       required: ["summary", "weekly_tip", "days", "shopping_list"],
@@ -294,7 +304,7 @@ ${weekly}
 Compromissos fixos recorrentes (devem aparecer no schedule do(s) dia(s) indicado(s) com o tipo "rotina" ou apropriado):
 ${commitments}
 
-Cria os 7 dias (Segunda a Domingo) com horários realistas que respeitem o horário de escola/trabalho de cada dia e incluam todos os compromissos fixos nos respetivos dias e horas. Refeições equilibradas variadas (não repetir a mesma refeição todos os dias), com estimativas calóricas aproximadas por refeição e total diário. Treinos apenas nos dias disponíveis. Inclui uma lista de compras realista (15-25 itens).`;
+Cria os 7 dias (Segunda a Domingo) com horários realistas que respeitem o horário de escola/trabalho de cada dia e incluam todos os compromissos fixos nos respetivos dias e horas. Refeições equilibradas variadas (não repetir a mesma refeição todos os dias), com estimativas calóricas aproximadas por refeição e total diário. Treinos apenas nos dias disponíveis. Inclui uma lista de compras realista (15-25 itens), com NOME, QUANTIDADE total para a semana (em kg, g, L, unidades, etc.) e QUALIDADE recomendada (ex: fresco, biológico, integral, magro), agrupada por CATEGORIA (Proteínas, Hortícolas, Frutas, Lacticínios, Mercearia, etc.).`;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

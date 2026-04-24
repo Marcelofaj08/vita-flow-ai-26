@@ -95,12 +95,10 @@ const Generate = () => {
       toast({ title: "Verifica os campos", description: parsed.error.issues[0].message, variant: "destructive" });
       return;
     }
-    const resultWindow = window.open("", "_blank");
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        resultWindow?.close();
         toast({ title: "Inicia sessão", description: "Cria conta ou entra para guardar a tua rotina no histórico." });
         navigate("/auth");
         return;
@@ -142,12 +140,8 @@ const Generate = () => {
       if (e2) throw e2;
       await supabase.from("health_profiles").update({ active_routine_id: row.id }).eq("user_id", session.user.id);
       sessionStorage.setItem("vitaflow:lastPlan", JSON.stringify({ plan: data.plan, inputs: enrichedForm }));
-      const resultUrl = `/result?id=${row.id}`;
-      if (resultWindow) resultWindow.location.href = resultUrl;
-      else window.open(resultUrl, "_blank");
-      navigate("/history");
+      navigate(`/result?id=${row.id}`);
     } catch (e: unknown) {
-      resultWindow?.close();
       toast({
         title: "Não conseguimos gerar a rotina",
         description: e instanceof Error ? e.message : "Tenta novamente em instantes.",

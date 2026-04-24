@@ -389,19 +389,54 @@ const Result = () => {
 
           {/* Shopping */}
           <TabsContent value="shopping" className="mt-6">
-            <div className="rounded-2xl bg-gradient-card border border-border/60 p-6 shadow-soft max-w-2xl">
+            <div className="rounded-2xl bg-gradient-card border border-border/60 p-6 shadow-soft max-w-3xl">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-primary" /> Lista de compras da semana
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">Gerada a partir do teu plano alimentar.</p>
-              <ul className="mt-5 grid sm:grid-cols-2 gap-2">
-                {plan.shopping_list.map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 rounded-lg p-2 hover:bg-accent/50 transition-colors">
-                    <span className="h-2 w-2 rounded-full bg-primary" />
-                    <span className="text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="text-sm text-muted-foreground mt-1">Quantidades e qualidade recomendada para cada ingrediente.</p>
+              {(() => {
+                const items = plan.shopping_list ?? [];
+                const normalized = items.map((raw) => {
+                  if (typeof raw === "string") {
+                    return { name: raw, quantity: "", quality: "", category: "Outros" };
+                  }
+                  return {
+                    name: raw?.name ?? "",
+                    quantity: raw?.quantity ?? "",
+                    quality: raw?.quality ?? "",
+                    category: raw?.category ?? "Outros",
+                  };
+                });
+                const grouped = normalized.reduce<Record<string, typeof normalized>>((acc, it) => {
+                  const key = it.category || "Outros";
+                  (acc[key] ||= []).push(it);
+                  return acc;
+                }, {});
+                return (
+                  <div className="mt-5 space-y-6">
+                    {Object.entries(grouped).map(([category, list]) => (
+                      <div key={category}>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">{category}</h4>
+                        <ul className="grid sm:grid-cols-2 gap-2">
+                          {list.map((item, i) => (
+                            <li key={`${category}-${i}`} className="rounded-lg border border-border/60 bg-background p-3 hover:border-primary/40 transition-colors">
+                              <div className="flex items-start justify-between gap-3">
+                                <span className="text-sm font-semibold">{item.name}</span>
+                                {item.quantity && (
+                                  <span className="text-xs font-mono rounded-full bg-primary/10 text-primary px-2 py-0.5 shrink-0">{item.quantity}</span>
+                                )}
+                              </div>
+                              {item.quality && (
+                                <div className="mt-1 text-xs text-muted-foreground">{item.quality}</div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </TabsContent>
         </Tabs>
