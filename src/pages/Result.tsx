@@ -393,9 +393,19 @@ const Result = () => {
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-primary" /> Lista de compras da semana
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">Quantidades e qualidade recomendada para cada ingrediente.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Quantidade <span className="font-semibold text-foreground">total para a semana</span> com unidades padronizadas (g, kg, ml, L, unidades).
+              </p>
               {(() => {
                 const items = plan.shopping_list ?? [];
+                // Separa quantidade numérica da unidade para destaque visual.
+                const splitQty = (q: string) => {
+                  const trimmed = (q || "").trim();
+                  if (!trimmed) return { value: "", unit: "" };
+                  const m = trimmed.match(/^([\d.,]+(?:\s*[-–x×]\s*[\d.,]+)?)\s*(.*)$/);
+                  if (!m) return { value: trimmed, unit: "" };
+                  return { value: m[1].trim(), unit: (m[2] || "").trim() };
+                };
                 const normalized = items.map((raw) => {
                   if (typeof raw === "string") {
                     return { name: raw, quantity: "", quality: "", category: "Outros" };
@@ -416,21 +426,32 @@ const Result = () => {
                   <div className="mt-5 space-y-6">
                     {Object.entries(grouped).map(([category, list]) => (
                       <div key={category}>
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">{category}</h4>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{category}</h4>
+                          <span className="text-[10px] text-muted-foreground">{list.length} {list.length === 1 ? "item" : "itens"}</span>
+                        </div>
                         <ul className="grid sm:grid-cols-2 gap-2">
-                          {list.map((item, i) => (
-                            <li key={`${category}-${i}`} className="rounded-lg border border-border/60 bg-background p-3 hover:border-primary/40 transition-colors">
-                              <div className="flex items-start justify-between gap-3">
-                                <span className="text-sm font-semibold">{item.name}</span>
-                                {item.quantity && (
-                                  <span className="text-xs font-mono rounded-full bg-primary/10 text-primary px-2 py-0.5 shrink-0">{item.quantity}</span>
+                          {list.map((item, i) => {
+                            const { value, unit } = splitQty(item.quantity);
+                            return (
+                              <li key={`${category}-${i}`} className="rounded-lg border border-border/60 bg-background p-3 hover:border-primary/40 transition-colors">
+                                <div className="flex items-start justify-between gap-3">
+                                  <span className="text-sm font-semibold">{item.name}</span>
+                                  {value ? (
+                                    <span className="inline-flex items-baseline gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 shrink-0">
+                                      <span className="text-xs font-mono font-bold text-primary">{value}</span>
+                                      {unit && <span className="text-[10px] font-medium uppercase tracking-wide text-primary/80">{unit}</span>}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] italic text-muted-foreground shrink-0">qtd. a definir</span>
+                                  )}
+                                </div>
+                                {item.quality && (
+                                  <div className="mt-1 text-xs text-muted-foreground">{item.quality}</div>
                                 )}
-                              </div>
-                              {item.quality && (
-                                <div className="mt-1 text-xs text-muted-foreground">{item.quality}</div>
-                              )}
-                            </li>
-                          ))}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     ))}
