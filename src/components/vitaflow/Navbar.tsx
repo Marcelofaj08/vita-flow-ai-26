@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bot, CalendarDays, History, Leaf, LogOut, Menu, Salad, User, UserCircle } from "lucide-react";
+import { Bell, Bot, CalendarDays, History, Leaf, LogOut, Menu, Salad, User, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -58,6 +58,7 @@ export const Navbar = () => {
     { to: "/account?tab=chat", label: "Chat", auth: true, icon: Bot },
     { to: routineHref, label: "Rotina da semana", auth: true, icon: CalendarDays },
     { to: mealsHref, label: "Plano alimentar", auth: true, icon: Salad },
+    { to: "/notifications", label: "Notificações", auth: true, icon: Bell },
     { to: "/about", label: "Sobre nós", auth: false },
     { to: "/account", label: "Conta", auth: true, icon: UserCircle },
   ];

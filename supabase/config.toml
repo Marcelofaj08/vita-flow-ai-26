@@ -1,3 +1,9 @@
 project_id = "etqkphyzqujdoiniaunb"
 [functions.generate-routine]
 verify_jwt = false
+
+[functions.send-push]
+verify_jwt = true
+
+[functions.dispatch-reminders]
+verify_jwt = false
