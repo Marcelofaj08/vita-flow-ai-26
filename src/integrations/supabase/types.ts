@@ -101,6 +101,105 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reminder_log: {
+        Row: {
+          id: string
+          reminder_key: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          reminder_key: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          reminder_key?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reminder_preferences: {
+        Row: {
+          created_at: string
+          hydration_enabled: boolean
+          hydration_end: string
+          hydration_interval_minutes: number
+          hydration_start: string
+          meal_times: Json
+          meals_enabled: boolean
+          timezone: string
+          updated_at: string
+          user_id: string
+          workout_time: string
+          workouts_enabled: boolean
+        }
+        Insert: {
+          created_at?: string
+          hydration_enabled?: boolean
+          hydration_end?: string
+          hydration_interval_minutes?: number
+          hydration_start?: string
+          meal_times?: Json
+          meals_enabled?: boolean
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          workout_time?: string
+          workouts_enabled?: boolean
+        }
+        Update: {
+          created_at?: string
+          hydration_enabled?: boolean
+          hydration_end?: string
+          hydration_interval_minutes?: number
+          hydration_start?: string
+          meal_times?: Json
+          meals_enabled?: boolean
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          workout_time?: string
+          workouts_enabled?: boolean
+        }
+        Relationships: []
+      }
       routines: {
         Row: {
           created_at: string
