@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RoutinePlan, RoutineInputs, ScheduleBlock } from "@/types/vitaflow";
 import { toast } from "@/hooks/use-toast";
 import type { Json } from "@/integrations/supabase/types";
+import { estimateItemPrice, formatEUR, unitLabel } from "@/lib/priceEstimator";
 
 const typeMeta: Record<ScheduleBlock["type"], { icon: LucideIcon; cls: string; label: string }> = {
   sono: { icon: Moon, cls: "bg-secondary/15 text-secondary border-secondary/30", label: "Sono" },
