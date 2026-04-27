@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, Bot, CalendarDays, History, Leaf, LogOut, Menu, Salad, User, UserCircle } from "lucide-react";
+import { Bell, History, Leaf, LogOut, Menu, User, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -10,25 +10,16 @@ import { supabase } from "@/integrations/supabase/client";
 export const Navbar = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      setActiveRoutineId(null);
       setAvatarUrl(null);
       setIsAdmin(false);
       return;
     }
-    supabase
-      .from("health_profiles")
-      .select("active_routine_id")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => setActiveRoutineId(data?.active_routine_id ?? null));
-
     supabase
       .from("profiles")
       .select("avatar_url")
@@ -49,18 +40,11 @@ export const Navbar = () => {
       .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
-  const routineHref = activeRoutineId ? `/result?id=${activeRoutineId}&tab=week` : "/history";
-  const mealsHref = activeRoutineId ? `/result?id=${activeRoutineId}&tab=meals` : "/history";
   const menuItems = [
     { to: "/", label: "Início", end: true, auth: false },
-    { to: "/account", label: "Perfil", auth: true },
     { to: "/history", label: "Histórico", auth: true, icon: History },
-    { to: "/account?tab=chat", label: "Chat", auth: true, icon: Bot },
-    { to: routineHref, label: "Rotina da semana", auth: true, icon: CalendarDays },
-    { to: mealsHref, label: "Plano alimentar", auth: true, icon: Salad },
     { to: "/notifications", label: "Notificações", auth: true, icon: Bell },
-    { to: "/about", label: "Sobre nós", auth: false },
-    { to: "/account", label: "Conta", auth: true, icon: UserCircle },
+    { to: "/about", label: "Sobre", auth: false },
   ];
 
   const linkCls = ({ isActive }: { isActive: boolean }) =>
