@@ -156,164 +156,105 @@ export default function Notifications() {
 
   return (
     <Layout>
-      <div className="container py-8 space-y-6 max-w-3xl">
+      <div className="container py-8 space-y-6 max-w-2xl">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Notificações de lembrete</h1>
-          <p className="text-muted-foreground mt-1">
-            Receba alertas das refeições, treinos e hidratação — mesmo com a aba fechada.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Lembretes</h1>
+          <p className="text-muted-foreground mt-1">Receba alertas mesmo com a aba fechada.</p>
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {subscribed ? <Bell className="h-5 w-5 text-primary" /> : <BellOff className="h-5 w-5" />}
-              Este dispositivo
-            </CardTitle>
-            <CardDescription>
-              {subscribed
-                ? "Está ativo. Você receberá notificações neste navegador/dispositivo."
-                : "Ative para autorizar notificações neste navegador."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
+          <CardContent className="pt-6 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              {subscribed ? <Bell className="h-5 w-5 text-primary" /> : <BellOff className="h-5 w-5 text-muted-foreground" />}
+              <div>
+                <div className="font-medium">{subscribed ? "Notificações ativas" : "Notificações desativadas"}</div>
+                <div className="text-xs text-muted-foreground">Neste dispositivo</div>
+              </div>
+            </div>
             {subscribed ? (
-              <>
-                <Button variant="outline" onClick={disable} disabled={busy}>
-                  Desativar neste dispositivo
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={sendTest} disabled={busy}>
+                  <Send className="h-4 w-4 mr-1" /> Testar
                 </Button>
-                <Button onClick={sendTest} disabled={busy}>
-                  <Send className="h-4 w-4 mr-2" /> Enviar notificação de teste
-                </Button>
-              </>
+                <Button variant="ghost" size="sm" onClick={disable} disabled={busy}>Desativar</Button>
+              </div>
             ) : (
-              <Button onClick={enable} disabled={busy}>
-                <Bell className="h-4 w-4 mr-2" /> Ativar notificações
-              </Button>
+              <Button onClick={enable} disabled={busy}>Ativar</Button>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Refeições</CardTitle>
-            <CardDescription>Lembretes nos horários das suas refeições.</CardDescription>
+            <CardTitle>Horários</CardTitle>
+            <CardDescription>Ative o que quiser receber e ajuste os horários.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="meals">Ativar lembretes de refeições</Label>
-              <Switch
-                id="meals"
-                checked={prefs.meals_enabled}
-                onCheckedChange={(v) => setPrefs((p) => ({ ...p, meals_enabled: v }))}
-              />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {(["breakfast", "lunch", "snack", "dinner"] as const).map((k) => (
-                <div key={k}>
-                  <Label className="text-xs capitalize">
-                    {k === "breakfast" ? "Café" : k === "lunch" ? "Almoço" : k === "snack" ? "Lanche" : "Jantar"}
-                  </Label>
-                  <Input
-                    type="time"
-                    value={prefs.meal_times[k]}
-                    onChange={(e) =>
-                      setPrefs((p) => ({
-                        ...p,
-                        meal_times: { ...p.meal_times, [k]: e.target.value },
-                      }))
-                    }
-                  />
+          <CardContent className="space-y-5">
+            {/* Refeições */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="meals" className="font-medium">Refeições</Label>
+                <Switch id="meals" checked={prefs.meals_enabled}
+                  onCheckedChange={(v) => setPrefs((p) => ({ ...p, meals_enabled: v }))} />
+              </div>
+              {prefs.meals_enabled && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {(["breakfast", "lunch", "snack", "dinner"] as const).map((k) => (
+                    <div key={k}>
+                      <Label className="text-xs text-muted-foreground">
+                        {k === "breakfast" ? "Café" : k === "lunch" ? "Almoço" : k === "snack" ? "Lanche" : "Jantar"}
+                      </Label>
+                      <Input type="time" value={prefs.meal_times[k]}
+                        onChange={(e) => setPrefs((p) => ({ ...p, meal_times: { ...p.meal_times, [k]: e.target.value } }))} />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+            </div>
+
+            <div className="border-t" />
+
+            {/* Treino */}
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="wo" className="font-medium">Treino</Label>
+              <div className="flex items-center gap-3">
+                {prefs.workouts_enabled && (
+                  <Input type="time" className="w-28" value={prefs.workout_time}
+                    onChange={(e) => setPrefs((p) => ({ ...p, workout_time: e.target.value }))} />
+                )}
+                <Switch id="wo" checked={prefs.workouts_enabled}
+                  onCheckedChange={(v) => setPrefs((p) => ({ ...p, workouts_enabled: v }))} />
+              </div>
+            </div>
+
+            <div className="border-t" />
+
+            {/* Hidratação */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="hy" className="font-medium">Hidratação</Label>
+                <Switch id="hy" checked={prefs.hydration_enabled}
+                  onCheckedChange={(v) => setPrefs((p) => ({ ...p, hydration_enabled: v }))} />
+              </div>
+              {prefs.hydration_enabled && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                  Das
+                  <Input type="time" className="w-28" value={prefs.hydration_start}
+                    onChange={(e) => setPrefs((p) => ({ ...p, hydration_start: e.target.value }))} />
+                  às
+                  <Input type="time" className="w-28" value={prefs.hydration_end}
+                    onChange={(e) => setPrefs((p) => ({ ...p, hydration_end: e.target.value }))} />
+                  a cada
+                  <Input type="number" min={15} step={15} className="w-20" value={prefs.hydration_interval_minutes}
+                    onChange={(e) => setPrefs((p) => ({ ...p, hydration_interval_minutes: Math.max(15, parseInt(e.target.value || "120", 10)) }))} />
+                  min
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Treino</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="wo">Ativar lembrete de treino</Label>
-              <Switch
-                id="wo"
-                checked={prefs.workouts_enabled}
-                onCheckedChange={(v) => setPrefs((p) => ({ ...p, workouts_enabled: v }))}
-              />
-            </div>
-            <div className="max-w-[160px]">
-              <Label className="text-xs">Horário</Label>
-              <Input
-                type="time"
-                value={prefs.workout_time}
-                onChange={(e) => setPrefs((p) => ({ ...p, workout_time: e.target.value }))}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Hidratação</CardTitle>
-            <CardDescription>Lembretes periódicos para beber água.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="hy">Ativar lembretes de hidratação</Label>
-              <Switch
-                id="hy"
-                checked={prefs.hydration_enabled}
-                onCheckedChange={(v) => setPrefs((p) => ({ ...p, hydration_enabled: v }))}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label className="text-xs">Início</Label>
-                <Input
-                  type="time"
-                  value={prefs.hydration_start}
-                  onChange={(e) => setPrefs((p) => ({ ...p, hydration_start: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Fim</Label>
-                <Input
-                  type="time"
-                  value={prefs.hydration_end}
-                  onChange={(e) => setPrefs((p) => ({ ...p, hydration_end: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Intervalo (min)</Label>
-                <Input
-                  type="number"
-                  min={15}
-                  step={15}
-                  value={prefs.hydration_interval_minutes}
-                  onChange={(e) =>
-                    setPrefs((p) => ({
-                      ...p,
-                      hydration_interval_minutes: Math.max(15, parseInt(e.target.value || "120", 10)),
-                    }))
-                  }
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end gap-2 sticky bottom-4">
-          <Button onClick={onSave} disabled={busy} size="lg">
-            Salvar preferências
-          </Button>
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          Fuso horário usado: <strong>{prefs.timezone}</strong>. Os lembretes são enviados a cada 5 min
-          conforme seus horários. Ative em todos os dispositivos onde quiser receber.
-        </p>
+        <Button onClick={onSave} disabled={busy} size="lg" className="w-full">Salvar</Button>
       </div>
     </Layout>
   );
