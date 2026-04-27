@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RoutinePlan, RoutineInputs, ScheduleBlock } from "@/types/vitaflow";
 import { toast } from "@/hooks/use-toast";
 import type { Json } from "@/integrations/supabase/types";
+import { estimateItemPrice, formatEUR, unitLabel } from "@/lib/priceEstimator";
 
 const typeMeta: Record<ScheduleBlock["type"], { icon: LucideIcon; cls: string; label: string }> = {
   sono: { icon: Moon, cls: "bg-secondary/15 text-secondary border-secondary/30", label: "Sono" },
@@ -422,17 +423,45 @@ const Result = () => {
                   (acc[key] ||= []).push(it);
                   return acc;
                 }, {});
+                // Estima preços por item, calcula totais por categoria e geral.
+                const priced = Object.entries(grouped).map(([category, list]) => {
+                  const itemsWithPrice = list.map((it) => ({
+                    ...it,
+                    estimate: estimateItemPrice(it.name, it.quantity),
+                  }));
+                  const subtotal = itemsWithPrice.reduce((s, it) => s + it.estimate.price, 0);
+                  return { category, list: itemsWithPrice, subtotal };
+                });
+                const grandTotal = priced.reduce((s, c) => s + c.subtotal, 0);
+                const totalItems = normalized.length;
                 return (
                   <div className="mt-5 space-y-6">
-                    {Object.entries(grouped).map(([category, list]) => (
+                    {/* Resumo da estimativa */}
+                    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-wider text-primary/80">Estimativa total</div>
+                        <div className="mt-1 text-2xl font-extrabold text-primary">{formatEUR(grandTotal)}</div>
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          {totalItems} {totalItems === 1 ? "produto" : "produtos"} • valores médios em supermercado PT
+                        </div>
+                      </div>
+                      <div className="text-right text-[11px] text-muted-foreground max-w-[260px]">
+                        Estimativa indicativa. Os preços reais variam por marca, loja e promoções.
+                      </div>
+                    </div>
+
+                    {priced.map(({ category, list, subtotal }) => (
                       <div key={category}>
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{category}</h4>
-                          <span className="text-[10px] text-muted-foreground">{list.length} {list.length === 1 ? "item" : "itens"}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {list.length} {list.length === 1 ? "item" : "itens"} • <span className="font-semibold text-foreground">{formatEUR(subtotal)}</span>
+                          </span>
                         </div>
                         <ul className="grid sm:grid-cols-2 gap-2">
                           {list.map((item, i) => {
                             const { value, unit } = splitQty(item.quantity);
+                            const est = item.estimate;
                             return (
                               <li key={`${category}-${i}`} className="rounded-lg border border-border/60 bg-background p-3 hover:border-primary/40 transition-colors">
                                 <div className="flex items-start justify-between gap-3">
@@ -449,6 +478,15 @@ const Result = () => {
                                 {item.quality && (
                                   <div className="mt-1 text-xs text-muted-foreground">{item.quality}</div>
                                 )}
+                                <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/50 pt-2">
+                                  <span className="text-[10px] text-muted-foreground">
+                                    ~{formatEUR(est.pricePerUnit)}/{unitLabel(est.unit)}
+                                  </span>
+                                  <span className="text-xs font-bold text-foreground">
+                                    {formatEUR(est.price)}
+                                    {est.estimated && <span className="ml-1 text-[9px] font-normal text-muted-foreground">aprox.</span>}
+                                  </span>
+                                </div>
                               </li>
                             );
                           })}
