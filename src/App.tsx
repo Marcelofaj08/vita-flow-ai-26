@@ -15,6 +15,7 @@ import Account from "./pages/Account.tsx";
 import Admin from "./pages/Admin.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import Notifications from "./pages/Notifications.tsx";
+import VittaflowAi from "./pages/VittaflowAi.tsx";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/account" element={<Account />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/vittaflow-ai" element={<VittaflowAi />} />
           <Route path="/about" element={<About />} />
           <Route path="/privacy" element={<Privacy />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
