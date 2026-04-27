@@ -10,25 +10,16 @@ import { supabase } from "@/integrations/supabase/client";
 export const Navbar = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      setActiveRoutineId(null);
       setAvatarUrl(null);
       setIsAdmin(false);
       return;
     }
-    supabase
-      .from("health_profiles")
-      .select("active_routine_id")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => setActiveRoutineId(data?.active_routine_id ?? null));
-
     supabase
       .from("profiles")
       .select("avatar_url")
