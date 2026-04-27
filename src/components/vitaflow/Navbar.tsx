@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, Bot, CalendarDays, History, Leaf, LogOut, Menu, Salad, User, UserCircle } from "lucide-react";
+import { Bell, History, Leaf, LogOut, Menu, User, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -49,18 +49,11 @@ export const Navbar = () => {
       .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
-  const routineHref = activeRoutineId ? `/result?id=${activeRoutineId}&tab=week` : "/history";
-  const mealsHref = activeRoutineId ? `/result?id=${activeRoutineId}&tab=meals` : "/history";
   const menuItems = [
     { to: "/", label: "Início", end: true, auth: false },
-    { to: "/account", label: "Perfil", auth: true },
     { to: "/history", label: "Histórico", auth: true, icon: History },
-    { to: "/account?tab=chat", label: "Chat", auth: true, icon: Bot },
-    { to: routineHref, label: "Rotina da semana", auth: true, icon: CalendarDays },
-    { to: mealsHref, label: "Plano alimentar", auth: true, icon: Salad },
     { to: "/notifications", label: "Notificações", auth: true, icon: Bell },
-    { to: "/about", label: "Sobre nós", auth: false },
-    { to: "/account", label: "Conta", auth: true, icon: UserCircle },
+    { to: "/about", label: "Sobre", auth: false },
   ];
 
   const linkCls = ({ isActive }: { isActive: boolean }) =>
