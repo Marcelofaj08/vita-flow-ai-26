@@ -112,7 +112,3 @@ Contribuições são bem-vindas!
    ```bash
    git checkout -b feature/nova-funcionalidade
 
-git commit -m "feat: adiciona nova funcionalidade"
-
-git push origin feature/nova-funcionalidade
-
