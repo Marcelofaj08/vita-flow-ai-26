@@ -1,114 +1,111 @@
-# Welcome to your Lovable project
-
-TODO: Document your project here
 # Vita Flow AI 🌿🤖
 
-**Transforme sua saúde com inteligência artificial personalizada.**
+**Transform your health with personalized artificial intelligence.**
 
-Vita Flow AI é uma plataforma de bem-estar inteligente que combina **treino**, **nutrição** e **mindfulness** em uma experiência única e personalizada. Desenvolvida para ajudar usuários a criar hábitos sustentáveis, a aplicação utiliza IA para oferecer orientação adaptativa, acompanhamento de progresso e recomendações personalizadas em tempo real.
+Vita Flow AI is an intelligent wellness platform that combines **fitness**, **nutrition**, and **mindfulness** into a single personalized experience. Designed to help users build sustainable habits, the application leverages AI to provide adaptive guidance, progress tracking, and real-time personalized recommendations.
 
-🔗 **Demo ao vivo:** https://vita-flow-ai-26.lovable.app
-
----
-
-## ✨ Visão Geral
-
-O Vita Flow AI foi criado para simplificar a jornada de saúde e bem-estar. Em vez de usar múltiplos aplicativos para diferentes necessidades, a plataforma centraliza tudo em um único lugar.
-
-Com uma abordagem holística, o sistema ajuda os usuários a:
-
-- Construir hábitos saudáveis de forma consistente
-- Receber planos personalizados de treino e alimentação
-- Praticar mindfulness e autocuidado
-- Monitorar seu progresso ao longo do tempo
-- Interagir com um coach virtual inteligente
+🔗 **Live Demo:** https://vita-flow-ai-26.lovable.app
 
 ---
 
-## 🚀 Principais Funcionalidades
+## ✨ Overview
 
-### 🏋️ Treinos Personalizados
-- Planos de exercícios adaptados ao perfil e objetivos do usuário
-- Ajustes automáticos com base no progresso
-- Rotinas flexíveis para diferentes níveis de experiência
+Vita Flow AI was created to simplify the health and wellness journey. Instead of relying on multiple apps for different needs, the platform brings everything together in one place.
 
-### 🥗 Nutrição Inteligente
-- Recomendações alimentares personalizadas
-- Sugestões baseadas em objetivos de saúde e estilo de vida
-- Foco em hábitos sustentáveis, não em dietas restritivas
+With a holistic approach, the system helps users:
 
-### 🧘 Mindfulness e Bem-Estar Mental
-- Exercícios guiados de atenção plena
-- Técnicas de respiração e relaxamento
-- Ferramentas para redução de estresse e melhora do foco
-
-### 🤖 Coach com Inteligência Artificial
-- Assistente virtual disponível 24/7
-- Recomendações personalizadas em tempo real
-- Ajustes dinâmicos em treino, alimentação e bem-estar
-
-### 📈 Dashboard de Progresso
-- Acompanhamento de metas e evolução
-- Visualização clara de métricas e hábitos
-- Insights acionáveis para melhorar resultados
+- Build healthy habits consistently
+- Receive personalized workout and nutrition plans
+- Practice mindfulness and self-care
+- Track progress over time
+- Interact with an intelligent virtual coach
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 🚀 Key Features
+
+### 🏋️ Personalized Workouts
+- Exercise plans tailored to each user's profile and goals
+- Automatic adjustments based on progress
+- Flexible routines for all fitness levels
+
+### 🥗 Smart Nutrition
+- Personalized meal and nutrition recommendations
+- Suggestions aligned with health goals and lifestyle
+- Focus on sustainable habits rather than restrictive diets
+
+### 🧘 Mindfulness & Mental Wellness
+- Guided mindfulness exercises
+- Breathing and relaxation techniques
+- Tools to reduce stress and improve focus
+
+### 🤖 AI-Powered Coach
+- Virtual assistant available 24/7
+- Real-time personalized recommendations
+- Dynamic adjustments for workouts, nutrition, and wellness
+
+### 📈 Progress Dashboard
+- Goal tracking and performance monitoring
+- Clear visualization of metrics and habits
+- Actionable insights for continuous improvement
+
+---
+
+## 🛠️ Technologies Used
 
 - **Frontend:** React
-- **Estilização:** Tailwind CSS
-- **Desenvolvimento Assistido por IA:** Lovable
-- **Integração de IA:** Modelos avançados de linguagem
-- **Deploy:** Lovable Hosting
+- **Styling:** Tailwind CSS
+- **AI-Assisted Development:** Lovable
+- **Artificial Intelligence:** Advanced language models
+- **Deployment:** Lovable Hosting
 
 ---
 
-## 🎯 Público-Alvo
+## 🎯 Target Audience
 
-- Pessoas que desejam melhorar saúde e qualidade de vida
-- Usuários em busca de orientação personalizada
-- Entusiastas de tecnologia e bem-estar
-- Profissionais com rotina agitada que precisam de praticidade
-
----
-
-## 💡 Diferenciais
-
-- Abordagem integrada: corpo, mente e alimentação
-- Personalização baseada em IA
-- Interface intuitiva e moderna
-- Experiência centrada no usuário
-- Escalável e pronta para evolução contínua
+- Individuals looking to improve their health and quality of life
+- Users seeking personalized guidance
+- Wellness and technology enthusiasts
+- Busy professionals who value convenience and efficiency
 
 ---
 
-## 📱 Casos de Uso
+## 💡 Key Differentiators
 
-- Desenvolvimento de hábitos saudáveis
-- Planejamento de rotinas de treino
-- Acompanhamento nutricional
-- Gestão do estresse
-- Melhoria de performance física e mental
-
----
-
-## 🔮 Futuras Melhorias
-
-- Integração com dispositivos wearables
-- Recomendações preditivas mais avançadas
-- Sistema de gamificação
-- Recursos de comunidade e interação social
-- Relatórios detalhados de desempenho
+- Holistic approach: body, mind, and nutrition
+- AI-driven personalization
+- Modern and intuitive interface
+- User-centered experience
+- Scalable architecture ready for future growth
 
 ---
 
-## 🤝 Contribuição
+## 📱 Use Cases
 
-Contribuições são bem-vindas!
+- Building healthy habits
+- Planning workout routines
+- Nutritional guidance and tracking
+- Stress management
+- Enhancing physical and mental performance
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature:
+---
+
+## 🔮 Future Enhancements
+
+- Integration with wearable devices
+- More advanced predictive recommendations
+- Gamification features
+- Community and social interaction tools
+- Detailed performance analytics
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome!
+
+1. Fork this repository
+2. Create a feature branch:
    ```bash
-   git checkout -b feature/nova-funcionalidade
-
+   git checkout -b feature/new-feature
+   
