@@ -3,6 +3,9 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Activity, Calendar, Camera, CheckCircle2, FileText, Plus, Ruler, Scale, UserRound } from "lucide-react";
 import { Layout } from "@/components/vitaflow/Layout";
 import { AssistantChat } from "@/components/vitaflow/AssistantChat";
+import { StreakCard } from "@/components/vitaflow/StreakCard";
+import { PremiumLock } from "@/components/vitaflow/PremiumLock";
+import { usePremium } from "@/hooks/usePremium";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +29,7 @@ type RoutineRow = { id: string; title: string; created_at: string; inputs: Parti
 
 const Account = () => {
   const { user, loading } = useAuth();
+  const { isPremium } = usePremium();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [health, setHealth] = useState<HealthProfile | null>(null);
@@ -153,6 +157,14 @@ const Account = () => {
             </TabsList>
 
             <TabsContent value="info" className="mt-6 space-y-6">
+              <StreakCard />
+              {!isPremium && (
+                <PremiumLock
+                  title="Desbloqueia tudo o que o VitaFlow oferece"
+                  description="Sugestões diárias com IA, ajuste automático da rotina, exportação de planos e histórico ilimitado por apenas 4,99€/mês."
+                  cta="Obter plano completo"
+                />
+              )}
               <div className="rounded-2xl bg-gradient-card border border-border/60 p-5 shadow-soft flex items-center gap-4 flex-wrap">
                 <Avatar className="h-20 w-20 border border-border/60">
                   <AvatarImage src={avatarUrl ?? undefined} alt="Foto de perfil" />

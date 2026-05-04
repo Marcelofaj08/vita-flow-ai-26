@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, History, Leaf, LogOut, Menu, User, UserCircle } from "lucide-react";
+import { Bell, History, Leaf, LogOut, Menu, Sparkles, User, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { usePremium } from "@/hooks/usePremium";
+import { Badge } from "@/components/ui/badge";
 
 export const Navbar = () => {
   const { user, signOut } = useAuth();
@@ -13,6 +15,7 @@ export const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { isPremium } = usePremium();
 
   useEffect(() => {
     if (!user) {
@@ -44,6 +47,7 @@ export const Navbar = () => {
     { to: "/", label: "Início", end: true, auth: false },
     { to: "/history", label: "Histórico", auth: true, icon: History },
     { to: "/notifications", label: "Notificações", auth: true, icon: Bell },
+    { to: "/pricing", label: "Premium", auth: false, icon: Sparkles },
     { to: "/about", label: "Sobre", auth: false },
   ];
 
@@ -142,6 +146,16 @@ export const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-2">
+          {user && isPremium && (
+            <Badge className="hidden sm:inline-flex bg-gradient-hero text-primary-foreground border-0 gap-1">
+              <Sparkles className="h-3 w-3" /> Premium
+            </Badge>
+          )}
+          {user && !isPremium && (
+            <Button asChild size="sm" variant="outline" className="hidden sm:inline-flex rounded-full border-primary/40 text-primary hover:bg-primary/10">
+              <Link to="/pricing"><Sparkles className="h-3.5 w-3.5 mr-1" /> Upgrade</Link>
+            </Button>
+          )}
           {user ? (
             <>
               <Link to="/account" className="hidden sm:block">

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles, Calendar, Apple, Dumbbell, ShoppingCart, Heart, Brain } from "lucide-react";
+import { ArrowRight, Sparkles, Calendar, Apple, Dumbbell, ShoppingCart, Heart, Brain, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/vitaflow/Layout";
 import heroImg from "@/assets/hero-vitaflow.jpg";
@@ -104,6 +104,27 @@ const Index = () => {
 
       {/* CTA */}
       <section className="container pb-20">
+        {/* PRICING TEASER */}
+        <div className="mb-10 rounded-3xl border border-border/60 bg-gradient-card p-8 md:p-10 shadow-soft">
+          <div className="grid gap-6 md:grid-cols-2 md:items-center">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
+                <Sparkles className="h-3 w-3" /> VitaFlow Premium
+              </span>
+              <h3 className="mt-3 text-2xl md:text-3xl font-bold">Resultados que duram, por 4,99€/mês.</h3>
+              <p className="mt-2 text-muted-foreground">IA ilimitada, ajuste automático, exportação e acompanhamento avançado. Cancela quando quiseres.</p>
+              <Button asChild className="mt-5 rounded-full bg-gradient-hero text-primary-foreground border-0 shadow-soft">
+                <Link to="/pricing">Obter plano completo <ArrowRight className="ml-1 h-4 w-4" /></Link>
+              </Button>
+            </div>
+            <ul className="grid gap-2 text-sm">
+              {["IA ilimitada", "Ajuste automático da rotina", "Exportação de planos", "Histórico completo"].map((it) => (
+                <li key={it} className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> {it}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
         <div className="relative overflow-hidden rounded-3xl bg-gradient-hero p-10 md:p-16 text-center shadow-glow">
           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_20%,white,transparent_50%)]" />
           <h2 className="relative text-3xl md:text-5xl font-bold text-primary-foreground">
