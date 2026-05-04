@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_progress: {
+        Row: {
+          completed: boolean
+          created_at: string
+          day: string
+          id: string
+          task_key: string
+          task_type: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          day?: string
+          id?: string
+          task_key: string
+          task_type?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          day?: string
+          id?: string
+          task_key?: string
+          task_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       health_profiles: {
         Row: {
           active_routine_id: string | null
@@ -227,6 +257,72 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          started_at: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          started_at?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          started_at?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      usage_counters: {
+        Row: {
+          ai_messages: number
+          created_at: string
+          day: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_messages?: number
+          created_at?: string
+          day?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_messages?: number
+          created_at?: string
+          day?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_access_log: {
         Row: {
           created_at: string
@@ -272,6 +368,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          last_active_date: string | null
+          longest_streak: number
+          total_completions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          last_active_date?: string | null
+          longest_streak?: number
+          total_completions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          last_active_date?: string | null
+          longest_streak?: number
+          total_completions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -299,9 +425,31 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_ai_usage: { Args: { _user_id: string }; Returns: number }
+      is_premium: { Args: { _user_id: string }; Returns: boolean }
+      update_streak: {
+        Args: { _user_id: string }
+        Returns: {
+          created_at: string
+          current_streak: number
+          last_active_date: string | null
+          longest_streak: number
+          total_completions: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_streaks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "admin" | "user"
+      subscription_plan: "free" | "premium"
+      subscription_status: "active" | "canceled" | "expired" | "trialing"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -430,6 +578,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      subscription_plan: ["free", "premium"],
+      subscription_status: ["active", "canceled", "expired", "trialing"],
     },
   },
 } as const
