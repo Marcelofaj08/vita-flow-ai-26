@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Bot, Loader2, Send, User } from "lucide-react";
+import { Bot, Loader2, Send, Sparkles, User } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { usePremium, FREE_AI_LIMIT } from "@/hooks/usePremium";
 const QUICK_PROMPTS = [
   "Como ajusto o treino se dormi mal?",
   "Sugestão de snack saudável",
@@ -21,6 +23,8 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { isPremium, aiUsedToday, aiRemaining, refresh: refreshPremium } = usePremium();
+  const blocked = !isPremium && aiRemaining <= 0;
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -41,6 +45,10 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
     event.preventDefault();
     const text = input.trim();
     if (!text || loading) return;
+    if (blocked) {
+      toast({ title: "Limite diário atingido", description: "Faz upgrade para Premium para continuares a usar o assistente." });
+      return;
+    }
     setInput("");
     setLoading(true);
     try {
@@ -52,6 +60,10 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
       setMessages((prev) => [...prev, userMessage]);
 
       await supabase.from("assistant_messages").insert({ user_id: user.id, role: "user", content: text });
+      if (!isPremium) {
+        await supabase.rpc("increment_ai_usage", { _user_id: user.id });
+        await refreshPremium();
+      }
       const [{ data: healthProfile }, { data: routine }] = await Promise.all([
         supabase.from("health_profiles").select("*").eq("user_id", user.id).maybeSingle(),
         activeRoutineId
@@ -82,6 +94,16 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
           <p className="text-sm text-muted-foreground">Respostas curtas e diretas, com base no teu perfil e rotina.</p>
         </div>
       </div>
+      {!isPremium && (
+        <div className="px-4 py-2 border-b border-border/60 bg-accent/30 flex items-center justify-between gap-2 text-xs">
+          <span className="text-muted-foreground">
+            Mensagens hoje: <strong className="text-foreground">{Math.min(aiUsedToday, FREE_AI_LIMIT)}</strong>/{FREE_AI_LIMIT}
+          </span>
+          <Link to="/pricing" className="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
+            <Sparkles className="h-3 w-3" /> Upgrade Premium
+          </Link>
+        </div>
+      )}
       <ScrollArea className="h-[420px] p-4">
         <div className="space-y-3">
           {messages.length === 0 && (
@@ -131,8 +153,20 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
         </div>
       </ScrollArea>
       <form onSubmit={send} className="p-4 border-t border-border/60 flex gap-2">
-        <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escreve a tua pergunta..." maxLength={600} />
-        <Button type="submit" disabled={loading} className="rounded-full bg-gradient-hero text-primary-foreground border-0"><Send className="h-4 w-4" /></Button>
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={blocked ? "Limite diário atingido — faz upgrade para Premium" : "Escreve a tua pergunta..."}
+          maxLength={600}
+          disabled={blocked}
+        />
+        {blocked ? (
+          <Button asChild type="button" className="rounded-full bg-gradient-hero text-primary-foreground border-0">
+            <Link to="/pricing"><Sparkles className="h-4 w-4" /></Link>
+          </Button>
+        ) : (
+          <Button type="submit" disabled={loading} className="rounded-full bg-gradient-hero text-primary-foreground border-0"><Send className="h-4 w-4" /></Button>
+        )}
       </form>
     </div>
   );
