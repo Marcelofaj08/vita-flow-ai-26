@@ -14,6 +14,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { estimateItemPrice, formatEUR, unitLabel } from "@/lib/priceEstimator";
 import { usePremium } from "@/hooks/usePremium";
 import { PremiumBadge } from "@/components/vitaflow/PremiumLock";
+import { useUpgradeModal } from "@/components/vitaflow/UpgradeModal";
 
 const typeMeta: Record<ScheduleBlock["type"], { icon: LucideIcon; cls: string; label: string }> = {
   sono: { icon: Moon, cls: "bg-secondary/15 text-secondary border-secondary/30", label: "Sono" },
@@ -73,6 +74,7 @@ const Result = () => {
   const [params] = useSearchParams();
   const id = params.get("id");
   const { isPremium } = usePremium();
+  const { open: openUpgrade } = useUpgradeModal();
   const [plan, setPlan] = useState<RoutinePlan | null>(null);
   const [inputs, setInputs] = useState<RoutineInputs | null>(null);
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
@@ -118,8 +120,7 @@ const Result = () => {
 
   const exportPdf = () => {
     if (!isPremium) {
-      toast({ title: "Exportação é Premium", description: "Faz upgrade para exportar a tua rotina em PDF." });
-      navigate("/pricing");
+      openUpgrade("export-pdf");
       return;
     }
     if (!plan || !inputs) return;
@@ -157,8 +158,7 @@ const Result = () => {
 
   const exportCalendar = () => {
     if (!isPremium) {
-      toast({ title: "Exportação é Premium", description: "Faz upgrade para exportar para o teu calendário." });
-      navigate("/pricing");
+      openUpgrade("export-calendar");
       return;
     }
     if (!plan || !inputs) return;
@@ -189,8 +189,7 @@ const Result = () => {
 
   const getDailySuggestion = async () => {
     if (!isPremium) {
-      toast({ title: "Sugestões diárias são Premium", description: "Faz upgrade para receber sugestões personalizadas todos os dias." });
-      navigate("/pricing");
+      openUpgrade("daily-suggestion");
       return;
     }
     if (!plan || !inputs) return;
@@ -209,8 +208,7 @@ const Result = () => {
 
   const reorganizeDay = async (day: string) => {
     if (!isPremium) {
-      toast({ title: "Ajuste automático é Premium", description: "Faz upgrade para a IA reorganizar dias por ti." });
-      navigate("/pricing");
+      openUpgrade("reorganize");
       return;
     }
     if (!plan || !inputs) return;
