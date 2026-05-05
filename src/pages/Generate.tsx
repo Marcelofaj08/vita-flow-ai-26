@@ -13,7 +13,6 @@ import { toast } from "@/hooks/use-toast";
 import type { RoutineInputs, FixedCommitment } from "@/types/vitaflow";
 import type { Json } from "@/integrations/supabase/types";
 import { usePremium, FREE_ROUTINE_LIMIT } from "@/hooks/usePremium";
-import { PremiumLock } from "@/components/vitaflow/PremiumLock";
 
 const DAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
@@ -44,9 +43,6 @@ const Generate = () => {
   const navigate = useNavigate();
   const { isPremium } = usePremium();
   const [loading, setLoading] = useState(false);
-  const [routineCount, setRoutineCount] = useState<number | null>(null);
-
-  useState; // noop to keep order
   const [bioFile, setBioFile] = useState<File | null>(null);
   const [form, setForm] = useState<RoutineInputs>({
     name: "",
