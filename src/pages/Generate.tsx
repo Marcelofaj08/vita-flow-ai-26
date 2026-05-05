@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { RoutineInputs, FixedCommitment } from "@/types/vitaflow";
 import type { Json } from "@/integrations/supabase/types";
+import { usePremium, FREE_ROUTINE_LIMIT } from "@/hooks/usePremium";
 
 const DAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
@@ -40,6 +41,7 @@ const schema = z.object({
 
 const Generate = () => {
   const navigate = useNavigate();
+  const { isPremium } = usePremium();
   const [loading, setLoading] = useState(false);
   const [bioFile, setBioFile] = useState<File | null>(null);
   const [form, setForm] = useState<RoutineInputs>({
@@ -102,6 +104,23 @@ const Generate = () => {
         toast({ title: "Inicia sessão", description: "Cria conta ou entra para guardar a tua rotina no histórico." });
         navigate("/auth");
         return;
+      }
+
+      if (!isPremium) {
+        const { count } = await supabase
+          .from("routines")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", session.user.id);
+        if ((count ?? 0) >= FREE_ROUTINE_LIMIT) {
+          toast({
+            title: "Limite do plano grátis",
+            description: `Só podes ter ${FREE_ROUTINE_LIMIT} rotina ativa. Faz upgrade para Premium para criares ilimitadas.`,
+            variant: "destructive",
+          });
+          navigate("/pricing");
+          setLoading(false);
+          return;
+        }
       }
 
       let bioimpedanceFilePath = form.bioimpedanceFilePath;
