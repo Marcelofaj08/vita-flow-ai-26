@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import type { RoutineInputs, FixedCommitment } from "@/types/vitaflow";
 import type { Json } from "@/integrations/supabase/types";
 import { usePremium, FREE_ROUTINE_LIMIT } from "@/hooks/usePremium";
+import { useUpgradeModal } from "@/components/vitaflow/UpgradeModal";
 
 const DAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
@@ -42,6 +43,7 @@ const schema = z.object({
 const Generate = () => {
   const navigate = useNavigate();
   const { isPremium } = usePremium();
+  const { open: openUpgrade } = useUpgradeModal();
   const [loading, setLoading] = useState(false);
   const [bioFile, setBioFile] = useState<File | null>(null);
   const [form, setForm] = useState<RoutineInputs>({
@@ -112,12 +114,7 @@ const Generate = () => {
           .select("id", { count: "exact", head: true })
           .eq("user_id", session.user.id);
         if ((count ?? 0) >= FREE_ROUTINE_LIMIT) {
-          toast({
-            title: "Limite do plano grátis",
-            description: `Só podes ter ${FREE_ROUTINE_LIMIT} rotina ativa. Faz upgrade para Premium para criares ilimitadas.`,
-            variant: "destructive",
-          });
-          navigate("/pricing");
+          openUpgrade("routine-limit");
           setLoading(false);
           return;
         }
