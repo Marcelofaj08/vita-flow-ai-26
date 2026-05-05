@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { usePremium, FREE_AI_LIMIT } from "@/hooks/usePremium";
+import { useUpgradeModal } from "@/components/vitaflow/UpgradeModal";
 const QUICK_PROMPTS = [
   "Como ajusto o treino se dormi mal?",
   "Sugestão de snack saudável",
@@ -24,6 +25,7 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { isPremium, aiUsedToday, aiRemaining, refresh: refreshPremium } = usePremium();
+  const { open: openUpgrade } = useUpgradeModal();
   const blocked = !isPremium && aiRemaining <= 0;
 
   useEffect(() => {
@@ -99,9 +101,9 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
           <span className="text-muted-foreground">
             Mensagens hoje: <strong className="text-foreground">{Math.min(aiUsedToday, FREE_AI_LIMIT)}</strong>/{FREE_AI_LIMIT}
           </span>
-          <Link to="/pricing" className="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
+          <button onClick={() => openUpgrade("ai-limit")} className="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
             <Sparkles className="h-3 w-3" /> Upgrade Premium
-          </Link>
+          </button>
         </div>
       )}
       <ScrollArea className="h-[420px] p-4">
@@ -161,8 +163,8 @@ export const AssistantChat = ({ activeRoutineId }: { activeRoutineId?: string | 
           disabled={blocked}
         />
         {blocked ? (
-          <Button asChild type="button" className="rounded-full bg-gradient-hero text-primary-foreground border-0">
-            <Link to="/pricing"><Sparkles className="h-4 w-4" /></Link>
+          <Button type="button" onClick={() => openUpgrade("ai-limit")} className="rounded-full bg-gradient-hero text-primary-foreground border-0">
+            <Sparkles className="h-4 w-4" />
           </Button>
         ) : (
           <Button type="submit" disabled={loading} className="rounded-full bg-gradient-hero text-primary-foreground border-0"><Send className="h-4 w-4" /></Button>
