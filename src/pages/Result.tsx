@@ -12,6 +12,8 @@ import type { RoutinePlan, RoutineInputs, ScheduleBlock } from "@/types/vitaflow
 import { toast } from "@/hooks/use-toast";
 import type { Json } from "@/integrations/supabase/types";
 import { estimateItemPrice, formatEUR, unitLabel } from "@/lib/priceEstimator";
+import { usePremium } from "@/hooks/usePremium";
+import { PremiumBadge } from "@/components/vitaflow/PremiumLock";
 
 const typeMeta: Record<ScheduleBlock["type"], { icon: LucideIcon; cls: string; label: string }> = {
   sono: { icon: Moon, cls: "bg-secondary/15 text-secondary border-secondary/30", label: "Sono" },
@@ -70,6 +72,7 @@ const Result = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const id = params.get("id");
+  const { isPremium } = usePremium();
   const [plan, setPlan] = useState<RoutinePlan | null>(null);
   const [inputs, setInputs] = useState<RoutineInputs | null>(null);
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
@@ -114,6 +117,11 @@ const Result = () => {
   };
 
   const exportPdf = () => {
+    if (!isPremium) {
+      toast({ title: "Exportação é Premium", description: "Faz upgrade para exportar a tua rotina em PDF." });
+      navigate("/pricing");
+      return;
+    }
     if (!plan || !inputs) return;
     const doc = new jsPDF();
     let y = 18;
@@ -148,6 +156,11 @@ const Result = () => {
   };
 
   const exportCalendar = () => {
+    if (!isPremium) {
+      toast({ title: "Exportação é Premium", description: "Faz upgrade para exportar para o teu calendário." });
+      navigate("/pricing");
+      return;
+    }
     if (!plan || !inputs) return;
     const events = plan.days.flatMap((day) =>
       day.schedule.map((block, index) => {
@@ -175,6 +188,11 @@ const Result = () => {
   };
 
   const getDailySuggestion = async () => {
+    if (!isPremium) {
+      toast({ title: "Sugestões diárias são Premium", description: "Faz upgrade para receber sugestões personalizadas todos os dias." });
+      navigate("/pricing");
+      return;
+    }
     if (!plan || !inputs) return;
     setAiLoading("suggestion");
     try {
@@ -190,6 +208,11 @@ const Result = () => {
   };
 
   const reorganizeDay = async (day: string) => {
+    if (!isPremium) {
+      toast({ title: "Ajuste automático é Premium", description: "Faz upgrade para a IA reorganizar dias por ti." });
+      navigate("/pricing");
+      return;
+    }
     if (!plan || !inputs) return;
     setAiLoading(day);
     try {
@@ -235,13 +258,13 @@ const Result = () => {
                 <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Gerar novamente
               </Button>
               <Button onClick={exportPdf} size="sm" variant="secondary" className="rounded-full">
-                <Download className="h-3.5 w-3.5 mr-1.5" /> Exportar PDF
+                <Download className="h-3.5 w-3.5 mr-1.5" /> Exportar PDF {!isPremium && <PremiumBadge />}
               </Button>
               <Button onClick={exportCalendar} size="sm" variant="secondary" className="rounded-full">
-                <CalendarPlus className="h-3.5 w-3.5 mr-1.5" /> Exportar calendário
+                <CalendarPlus className="h-3.5 w-3.5 mr-1.5" /> Exportar calendário {!isPremium && <PremiumBadge />}
               </Button>
               <Button onClick={getDailySuggestion} size="sm" variant="secondary" className="rounded-full" disabled={aiLoading === "suggestion"}>
-                <Wand2 className="h-3.5 w-3.5 mr-1.5" /> Sugestão do dia
+                <Wand2 className="h-3.5 w-3.5 mr-1.5" /> Sugestão do dia {!isPremium && <PremiumBadge />}
               </Button>
             </div>
           </div>
