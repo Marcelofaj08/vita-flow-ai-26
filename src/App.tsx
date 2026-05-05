@@ -17,6 +17,7 @@ import ResetPassword from "./pages/ResetPassword.tsx";
 import Notifications from "./pages/Notifications.tsx";
 import VittaflowAi from "./pages/VittaflowAi.tsx";
 import Pricing from "./pages/Pricing.tsx";
+import { UpgradeModalProvider } from "./components/vitaflow/UpgradeModal";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +27,8 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
+        <UpgradeModalProvider>
+         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -42,7 +44,8 @@ const App = () => (
           <Route path="/privacy" element={<Privacy />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
+         </Routes>
+        </UpgradeModalProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
